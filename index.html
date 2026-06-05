@@ -1,473 +1,116 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FX Journal">
-<title>FX Journal</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body {
-    min-height: 100vh;
-    background: #0a0e1a;
-    font-family: 'Noto Sans JP', sans-serif;
-    color: #e8eaf0;
-    overscroll-behavior: none;
-  }
-
-  /* ヘッダー */
-  #header {
-    background: linear-gradient(135deg, #0d1b3e 0%, #0a1628 100%);
-    border-bottom: 1px solid #1e3a5f;
-    padding: 16px 20px 14px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  #header .label {
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: #4a9eff;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-  }
-  #nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .nav-btn {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px;
-    color: #e8eaf0;
-    font-size: 22px;
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s;
-  }
-  .nav-btn:active { background: rgba(255,255,255,0.12); }
-  #month-title { font-size: 26px; font-weight: 700; }
-  #year-title { font-size: 15px; color: #6a8aaf; margin-left: 6px; }
-  #summary {
-    display: flex;
-    gap: 0;
-    background: rgba(255,255,255,0.04);
-    border-radius: 10px;
-    padding: 11px 14px;
-  }
-  .sum-item { flex: 1; text-align: center; }
-  .sum-divider { width: 1px; background: #1e3a5f; margin: 0 4px; }
-  .sum-label { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 3px; }
-  .sum-value { font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 600; }
-
-  /* カレンダー */
-  #calendar-wrap { padding: 14px 10px 100px; }
-  #dow-row {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    margin-bottom: 4px;
-  }
-  .dow { text-align: center; font-size: 11px; font-weight: 500; padding: 3px 0; color: #5a7a9a; }
-  .dow.sun { color: #ff6b6b; }
-  .dow.sat { color: #4a9eff; }
-  #grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 3px;
-  }
-  .cell-empty { min-height: 68px; }
-  .cell {
-    background: rgba(255,255,255,0.025);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 8px;
-    min-height: 68px;
-    padding: 6px 4px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    position: relative;
-    overflow: hidden;
-    transition: background 0.12s;
-  }
-  .cell:active { background: rgba(255,255,255,0.07); }
-  .cell.has-data { background: linear-gradient(135deg, #111827, #0f1c2e); border-color: rgba(255,255,255,0.1); }
-  .cell.today { background: linear-gradient(135deg, #0d2d5e, #0a2040); border-color: #4a9eff; }
-  .cell-bar {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-  .cell-day {
-    font-size: 13px;
-    font-weight: 500;
-    color: #c8d4e0;
-  }
-  .cell-day.sun { color: #ff6b6b; }
-  .cell-day.sat { color: #4a9eff; }
-  .cell-win { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #00e5a0; line-height: 1.3; }
-  .cell-loss { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #ff4d6a; line-height: 1.3; }
-  .cell-net {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px;
-    line-height: 1.3;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    padding-top: 2px;
-    width: 100%;
-    text-align: center;
-  }
-
-  /* モーダル */
-  #overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(4px);
-  }
-  #overlay.show { display: flex; }
-  #modal {
-    background: linear-gradient(135deg, #0f1c2e, #0a1628);
-    border: 1px solid #1e3a5f;
-    border-radius: 16px;
-    padding: 26px 22px;
-    width: 90%;
-    max-width: 360px;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
-  }
-  .modal-label { font-size: 10px; letter-spacing: 3px; color: #4a9eff; margin-bottom: 5px; text-transform: uppercase; }
-  #modal-date { font-size: 19px; font-weight: 700; margin-bottom: 22px; }
-  .input-group { margin-bottom: 14px; }
-  .input-label { font-size: 11px; letter-spacing: 1px; display: block; margin-bottom: 6px; }
-  .input-wrap { position: relative; }
-  .input-yen {
-    position: absolute; left: 12px; top: 50%;
-    transform: translateY(-50%);
-    color: #5a7a9a; font-size: 13px;
-  }
-  .input-field {
-    width: 100%;
-    padding: 12px 12px 12px 28px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(0,229,160,0.27);
-    border-radius: 10px;
-    color: #e8eaf0;
-    font-size: 15px;
-    font-family: 'Share Tech Mono', monospace;
-    outline: none;
-    -webkit-appearance: none;
-  }
-  .input-field.loss-field { border-color: rgba(255,77,106,0.27); }
-  .input-field:focus { border-color: #00e5a0; }
-  .input-field.loss-field:focus { border-color: #ff4d6a; }
-  #preview {
-    display: none;
-    padding: 10px 14px;
-    background: rgba(255,255,255,0.04);
-    border-radius: 8px;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0;
-    margin-top: 4px;
-  }
-  #preview.show { display: flex; }
-  #preview-label { font-size: 12px; color: #6a8aaf; }
-  #preview-value { font-family: 'Share Tech Mono', monospace; font-size: 16px; }
-  #modal-btns { display: flex; gap: 10px; margin-top: 22px; }
-  .btn {
-    flex: 1;
-    padding: 13px;
-    border-radius: 10px;
-    font-size: 13px;
-    cursor: pointer;
-    border: none;
-    font-family: 'Noto Sans JP', sans-serif;
-  }
-  #btn-delete {
-    flex: 0 0 auto;
-    padding: 13px 16px;
-    background: rgba(255,77,106,0.1);
-    border: 1px solid #ff4d6a;
-    color: #ff4d6a;
-    display: none;
-  }
-  #btn-delete.show { display: block; }
-  #btn-cancel { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #8a9ab0; }
-  #btn-save { background: linear-gradient(135deg, #1a5faa, #0d3d7a); border: 1px solid #4a9eff; color: #fff; font-weight: 600; }
-  #btn-cancel:active { background: rgba(255,255,255,0.1); }
-  #btn-save:active { opacity: 0.85; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="FX収支" />
+  <title>FX収支カレンダー</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
-<div id="header">
-  <div class="label">FX Trading Journal</div>
-  <div id="nav">
-    <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
-    <div>
-      <span id="month-title"></span>
-      <span id="year-title"></span>
-    </div>
-    <button class="nav-btn" onclick="changeMonth(1)">›</button>
-  </div>
-  <div id="summary">
-    <div class="sum-item">
-      <div class="sum-label">勝ち</div>
-      <div class="sum-value" id="sum-win" style="color:#00e5a0"></div>
-    </div>
-    <div class="sum-divider"></div>
-    <div class="sum-item">
-      <div class="sum-label">負け</div>
-      <div class="sum-value" id="sum-loss" style="color:#ff4d6a"></div>
-    </div>
-    <div class="sum-divider"></div>
-    <div class="sum-item">
-      <div class="sum-label">収支</div>
-      <div class="sum-value" id="sum-net"></div>
-    </div>
-  </div>
-</div>
-
-<div id="calendar-wrap">
-  <div id="dow-row">
-    <div class="dow sun">日</div>
-    <div class="dow">月</div>
-    <div class="dow">火</div>
-    <div class="dow">水</div>
-    <div class="dow">木</div>
-    <div class="dow">金</div>
-    <div class="dow sat">土</div>
-  </div>
-  <div id="grid"></div>
-</div>
-
-<!-- モーダル -->
-<div id="overlay" onclick="closeModal(event)">
-  <div id="modal">
-    <div class="modal-label">Entry</div>
-    <div id="modal-date"></div>
-    <div class="input-group">
-      <label class="input-label" style="color:#00e5a0">勝ち金額</label>
-      <div class="input-wrap">
-        <span class="input-yen">¥</span>
-        <input type="number" id="input-win" class="input-field" placeholder="例: 15000" inputmode="numeric" oninput="updatePreview()">
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">FX PROFIT TRACKER</p>
+        <h1>FX収支カレンダー</h1>
       </div>
-    </div>
-    <div class="input-group">
-      <label class="input-label" style="color:#ff4d6a">負け金額</label>
-      <div class="input-wrap">
-        <span class="input-yen">¥</span>
-        <input type="number" id="input-loss" class="input-field loss-field" placeholder="例: 5000" inputmode="numeric" oninput="updatePreview()">
+      <button class="install-help" id="installHelp" type="button">ホーム追加</button>
+    </header>
+
+
+    <section class="quote-card" aria-label="今日の投資格言">
+      <div>
+        <p class="eyebrow">FAMOUS INVESTOR WISDOM</p>
+        <p id="quoteText" class="quote-text">----</p>
+        <p id="quoteAuthor" class="quote-author">----</p>
       </div>
-    </div>
-    <div id="preview">
-      <span id="preview-label">収支</span>
-      <span id="preview-value"></span>
-    </div>
-    <div id="modal-btns">
-      <button id="btn-delete" class="btn" onclick="deleteEntry()">削除</button>
-      <button id="btn-cancel" class="btn" onclick="closeModal()">キャンセル</button>
-      <button id="btn-save" class="btn" onclick="saveEntry()">保存</button>
-    </div>
-  </div>
-</div>
+      <button id="quoteShuffle" type="button" class="quote-button" aria-label="格言を入れ替える">↻</button>
+    </section>
 
-<script>
-const STORAGE_KEY = 'fx-calendar-v1';
-const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    <section class="month-switcher" aria-label="月の切り替え">
+      <button id="prevMonth" type="button" aria-label="前の月へ">‹</button>
+      <h2 id="monthTitle">----</h2>
+      <button id="nextMonth" type="button" aria-label="次の月へ">›</button>
+    </section>
 
-let curYear, curMonth, data = {}, activeKey = null;
+    <section class="summary-grid" aria-label="収支サマリー">
+      <article class="summary-card primary">
+        <p>月別合計</p>
+        <strong id="monthNet">¥0</strong>
+        <span id="monthBreakdown">勝ち ¥0 / 負け ¥0</span>
+      </article>
+      <article class="summary-card">
+        <p>年別合計</p>
+        <strong id="yearNet">¥0</strong>
+        <span id="yearBreakdown">勝ち ¥0 / 負け ¥0</span>
+      </article>
+    </section>
 
-function fmt(n) {
-  if (n === undefined || n === null || n === '') return '';
-  return Number(n).toLocaleString('ja-JP');
-}
+    <section class="calendar-card">
+      <div class="weekdays" aria-hidden="true">
+        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+      </div>
+      <div id="calendar" class="calendar" aria-label="収支カレンダー"></div>
+    </section>
 
-function load() {
-  try { data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { data = {}; }
-}
+    <section class="entry-panel" aria-label="選択日の入力">
+      <div class="entry-title-row">
+        <div>
+          <p class="eyebrow">SELECTED DAY</p>
+          <h3 id="selectedDateTitle">日付を選択</h3>
+        </div>
+        <button id="todayBtn" type="button" class="ghost-button">今日</button>
+      </div>
 
-function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
-}
+      <div class="input-grid">
+        <label>
+          <span>勝ち金額</span>
+          <input id="winInput" type="number" inputmode="numeric" min="0" placeholder="例：5000" />
+        </label>
+        <label>
+          <span>負け金額</span>
+          <input id="lossInput" type="number" inputmode="numeric" min="0" placeholder="例：2000" />
+        </label>
+      </div>
 
-function dateKey(y, m, d) {
-  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-}
+      <div class="daily-result">
+        <span>この日の収支</span>
+        <strong id="dayNet">¥0</strong>
+      </div>
 
-function init() {
-  load();
-  const now = new Date();
-  curYear = now.getFullYear();
-  curMonth = now.getMonth();
-  render();
-}
+      <div class="action-row">
+        <button id="saveEntry" class="main-button" type="button">保存</button>
+        <button id="clearEntry" class="danger-button" type="button">クリア</button>
+      </div>
+    </section>
 
-function changeMonth(dir) {
-  curMonth += dir;
-  if (curMonth < 0) { curMonth = 11; curYear--; }
-  if (curMonth > 11) { curMonth = 0; curYear++; }
-  render();
-}
+    <section class="data-panel" aria-label="データ管理">
+      <details>
+        <summary>データ管理</summary>
+        <p>データはこの端末のブラウザ内に保存されます。機種変更前はバックアップをおすすめします。</p>
+        <div class="action-row small">
+          <button id="exportData" type="button" class="ghost-button">バックアップ</button>
+          <label class="import-label">
+            復元
+            <input id="importData" type="file" accept="application/json" />
+          </label>
+        </div>
+      </details>
+    </section>
+  </main>
 
-function render() {
-  document.getElementById('month-title').textContent = MONTHS[curMonth];
-  document.getElementById('year-title').textContent = curYear;
+  <dialog id="helpDialog" class="help-dialog">
+    <h2>ホーム画面に追加</h2>
+    <p>iPhoneの場合はSafariでこのページを開き、共有ボタンから「ホーム画面に追加」を選びます。</p>
+    <button id="closeHelp" type="button" class="main-button">OK</button>
+  </dialog>
 
-  const now = new Date();
-  const todayKey = dateKey(now.getFullYear(), now.getMonth(), now.getDate());
-  const firstDow = new Date(curYear, curMonth, 1).getDay();
-  const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
-
-  let totalWin = 0, totalLoss = 0;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const k = dateKey(curYear, curMonth, d);
-    const e = data[k];
-    if (e) { totalWin += e.win || 0; totalLoss += e.loss || 0; }
-  }
-  const net = totalWin - totalLoss;
-  document.getElementById('sum-win').textContent = fmt(totalWin);
-  document.getElementById('sum-loss').textContent = fmt(totalLoss);
-  const netEl = document.getElementById('sum-net');
-  netEl.textContent = (net >= 0 ? '+' : '') + fmt(net);
-  netEl.style.color = net >= 0 ? '#4a9eff' : '#ff7c3a';
-
-  const grid = document.getElementById('grid');
-  grid.innerHTML = '';
-
-  for (let i = 0; i < firstDow; i++) {
-    const empty = document.createElement('div');
-    empty.className = 'cell-empty';
-    grid.appendChild(empty);
-  }
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const k = dateKey(curYear, curMonth, d);
-    const e = data[k];
-    const dow = (firstDow + d - 1) % 7;
-    const isToday = k === todayKey;
-
-    const cell = document.createElement('div');
-    cell.className = 'cell' + (e ? ' has-data' : '') + (isToday ? ' today' : '');
-    cell.onclick = () => openModal(k);
-
-    if (e) {
-      const bar = document.createElement('div');
-      bar.className = 'cell-bar';
-      const cellNet = (e.win || 0) - (e.loss || 0);
-      bar.style.background = cellNet >= 0 ? '#00e5a0' : '#ff4d6a';
-      cell.appendChild(bar);
-    }
-
-    const dayEl = document.createElement('div');
-    dayEl.className = 'cell-day' + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '');
-    dayEl.textContent = d;
-    cell.appendChild(dayEl);
-
-    if (e) {
-      if (e.win !== undefined) {
-        const w = document.createElement('div');
-        w.className = 'cell-win';
-        w.textContent = '+' + fmt(e.win);
-        cell.appendChild(w);
-      }
-      if (e.loss !== undefined) {
-        const l = document.createElement('div');
-        l.className = 'cell-loss';
-        l.textContent = '-' + fmt(e.loss);
-        cell.appendChild(l);
-      }
-      if (e.win !== undefined && e.loss !== undefined) {
-        const n = document.createElement('div');
-        n.className = 'cell-net';
-        const cv = (e.win || 0) - (e.loss || 0);
-        n.textContent = (cv >= 0 ? '+' : '') + fmt(cv);
-        n.style.color = cv >= 0 ? '#4a9eff' : '#ff7c3a';
-        cell.appendChild(n);
-      }
-    }
-
-    grid.appendChild(cell);
-  }
-}
-
-function openModal(key) {
-  activeKey = key;
-  const e = data[key] || {};
-  const parts = key.split('-');
-  document.getElementById('modal-date').textContent = `${parts[0]}/${parts[1]}/${parts[2]}`;
-  document.getElementById('input-win').value = e.win !== undefined ? e.win : '';
-  document.getElementById('input-loss').value = e.loss !== undefined ? e.loss : '';
-  document.getElementById('btn-delete').className = 'btn' + (data[key] ? ' show' : '');
-  updatePreview();
-  document.getElementById('overlay').classList.add('show');
-  setTimeout(() => document.getElementById('input-win').focus(), 100);
-}
-
-function closeModal(e) {
-  if (e && e.target !== document.getElementById('overlay')) return;
-  document.getElementById('overlay').classList.remove('show');
-  activeKey = null;
-}
-
-function updatePreview() {
-  const w = Number(document.getElementById('input-win').value || 0);
-  const l = Number(document.getElementById('input-loss').value || 0);
-  const winFilled = document.getElementById('input-win').value !== '';
-  const lossFilled = document.getElementById('input-loss').value !== '';
-  const preview = document.getElementById('preview');
-  if (winFilled || lossFilled) {
-    preview.classList.add('show');
-    const net = w - l;
-    const el = document.getElementById('preview-value');
-    el.textContent = (net >= 0 ? '+' : '') + fmt(net);
-    el.style.color = net >= 0 ? '#4a9eff' : '#ff7c3a';
-  } else {
-    preview.classList.remove('show');
-  }
-}
-
-function saveEntry() {
-  if (!activeKey) return;
-  const winVal = document.getElementById('input-win').value;
-  const lossVal = document.getElementById('input-loss').value;
-  if (winVal === '' && lossVal === '') {
-    delete data[activeKey];
-  } else {
-    const entry = {};
-    if (winVal !== '') entry.win = Number(winVal);
-    if (lossVal !== '') entry.loss = Number(lossVal);
-    data[activeKey] = entry;
-  }
-  save();
-  document.getElementById('overlay').classList.remove('show');
-  activeKey = null;
-  render();
-}
-
-function deleteEntry() {
-  if (!activeKey) return;
-  delete data[activeKey];
-  save();
-  document.getElementById('overlay').classList.remove('show');
-  activeKey = null;
-  render();
-}
-
-init();
-</script>
+  <script src="app.js"></script>
 </body>
 </html>
