@@ -419,8 +419,9 @@ const els = {
   yearNet: document.getElementById('yearNet'),
   yearBreakdown: document.getElementById('yearBreakdown'),
   selectedDateTitle: document.getElementById('selectedDateTitle'),
-  winInput: document.getElementById('winInput'),
-  lossInput: document.getElementById('lossInput'),
+  typeProfit: document.getElementById('typeProfit'),
+  typeLoss: document.getElementById('typeLoss'),
+  amountInput: document.getElementById('amountInput'),
   dayNet: document.getElementById('dayNet'),
   quoteText: document.getElementById('quoteText'),
   quoteAuthor: document.getElementById('quoteAuthor'),
@@ -459,11 +460,12 @@ document.getElementById('todayBtn').addEventListener('click', () => {
 });
 
 document.getElementById('saveEntry').addEventListener('click', () => {
-  const win = normalizeAmount(els.winInput.value);
-  const loss = normalizeAmount(els.lossInput.value);
-  if (win === 0 && loss === 0) {
+  const amount = normalizeAmount(els.amountInput.value);
+  if (amount === 0) {
     delete state.records[state.selected];
   } else {
+    const win = els.typeProfit.checked ? amount : 0;
+    const loss = els.typeLoss.checked ? amount : 0;
     state.records[state.selected] = { win, loss };
   }
   saveRecords();
@@ -476,8 +478,9 @@ document.getElementById('clearEntry').addEventListener('click', () => {
   render();
 });
 
-els.winInput.addEventListener('input', updateDayPreview);
-els.lossInput.addEventListener('input', updateDayPreview);
+els.typeProfit.addEventListener('change', updateDayPreview);
+els.typeLoss.addEventListener('change', updateDayPreview);
+els.amountInput.addEventListener('input', updateDayPreview);
 
 document.getElementById('quoteShuffle').addEventListener('click', renderQuote);
 
@@ -622,7 +625,7 @@ function renderCalendar() {
     const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
     const key = toKey(day);
     const record = state.records[key] || { win: 0, loss: 0 };
-    const net = record.win - record.loss;
+    const net = getRecordNet(record);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'day-cell';
@@ -654,10 +657,12 @@ function renderCalendar() {
 function renderEntryPanel() {
   const date = parseKey(state.selected);
   const record = state.records[state.selected] || { win: 0, loss: 0 };
+  const net = getRecordNet(record);
   const day = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
   els.selectedDateTitle.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${day}）`;
-  els.winInput.value = record.win || '';
-  els.lossInput.value = record.loss || '';
+  els.typeProfit.checked = net >= 0;
+  els.typeLoss.checked = net < 0;
+  els.amountInput.value = net === 0 ? '' : Math.abs(net);
   updateDayPreview();
 }
 
@@ -668,26 +673,30 @@ function renderSummary() {
   const yearSummary = summarize(({ y }) => y === year);
 
   setMoney(els.monthNet, monthSummary.net);
-  els.monthBreakdown.textContent = `勝ち ${yen.format(monthSummary.win)} / 負け ${yen.format(monthSummary.loss)}`;
+  els.monthBreakdown.textContent = `プラス ${yen.format(monthSummary.win)} / マイナス ${yen.format(monthSummary.loss)}`;
   setMoney(els.yearNet, yearSummary.net);
-  els.yearBreakdown.textContent = `勝ち ${yen.format(yearSummary.win)} / 負け ${yen.format(yearSummary.loss)}`;
+  els.yearBreakdown.textContent = `プラス ${yen.format(yearSummary.win)} / マイナス ${yen.format(yearSummary.loss)}`;
 }
 
 function summarize(filter) {
   return Object.entries(state.records).reduce((sum, [key, record]) => {
     const [y, m] = key.split('-').map(Number);
     if (!filter({ y, m })) return sum;
-    sum.win += record.win || 0;
-    sum.loss += record.loss || 0;
+    sum.win += normalizeAmount(record.win);
+    sum.loss += normalizeAmount(record.loss);
     sum.net = sum.win - sum.loss;
     return sum;
   }, { win: 0, loss: 0, net: 0 });
 }
 
 function updateDayPreview() {
-  const win = normalizeAmount(els.winInput.value);
-  const loss = normalizeAmount(els.lossInput.value);
-  setMoney(els.dayNet, win - loss);
+  const amount = normalizeAmount(els.amountInput.value);
+  const net = els.typeLoss.checked ? -amount : amount;
+  setMoney(els.dayNet, net);
+}
+
+function getRecordNet(record) {
+  return normalizeAmount(record.win) - normalizeAmount(record.loss);
 }
 
 function setMoney(element, value) {

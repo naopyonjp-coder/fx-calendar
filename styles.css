@@ -246,12 +246,52 @@ h3 { margin-bottom: 0; font-size: 20px; }
   gap: 10px;
 }
 
-.input-grid {
+.entry-inputs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 18px 0 12px;
 }
+
+.trade-type {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+.trade-type label {
+  min-width: 0;
+}
+
+.trade-type input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.trade-type span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  border-radius: 16px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.trade-type input:checked + span {
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 8px 22px rgba(37, 67, 97, .08);
+}
+
+.trade-type #typeProfit:checked + span { color: var(--profit); }
+.trade-type #typeLoss:checked + span { color: var(--loss); }
 
 label span {
   display: block;
@@ -314,7 +354,6 @@ summary { cursor: pointer; font-weight: 900; }
 
 @media (max-width: 640px) {
   .summary-grid { grid-template-columns: 1fr; }
-  .input-grid { grid-template-columns: 1fr; }
   .day-cell { border-radius: 14px; padding: 7px; }
   .day-amount { font-size: 10px; }
 }

@@ -43,12 +43,12 @@
       <article class="summary-card primary">
         <p>月別合計</p>
         <strong id="monthNet">¥0</strong>
-        <span id="monthBreakdown">勝ち ¥0 / 負け ¥0</span>
+        <span id="monthBreakdown">プラス ¥0 / マイナス ¥0</span>
       </article>
       <article class="summary-card">
         <p>年別合計</p>
         <strong id="yearNet">¥0</strong>
-        <span id="yearBreakdown">勝ち ¥0 / 負け ¥0</span>
+        <span id="yearBreakdown">プラス ¥0 / マイナス ¥0</span>
       </article>
     </section>
 
@@ -68,14 +68,20 @@
         <button id="todayBtn" type="button" class="ghost-button">今日</button>
       </div>
 
-      <div class="input-grid">
+      <div class="entry-inputs">
+        <div class="trade-type" aria-label="収支区分">
+          <label>
+            <input id="typeProfit" type="radio" name="tradeType" value="profit" checked />
+            <span>プラス</span>
+          </label>
+          <label>
+            <input id="typeLoss" type="radio" name="tradeType" value="loss" />
+            <span>マイナス</span>
+          </label>
+        </div>
         <label>
-          <span>勝ち金額</span>
-          <input id="winInput" type="number" inputmode="numeric" min="0" placeholder="例：5000" />
-        </label>
-        <label>
-          <span>負け金額</span>
-          <input id="lossInput" type="number" inputmode="numeric" min="0" placeholder="例：2000" />
+          <span>金額</span>
+          <input id="amountInput" type="number" inputmode="numeric" min="0" placeholder="例：5000" />
         </label>
       </div>
 

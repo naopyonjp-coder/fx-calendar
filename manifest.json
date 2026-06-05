@@ -1,7 +1,7 @@
 {
   "name": "FX収支カレンダー",
   "short_name": "FX収支",
-  "description": "勝ち金額と負け金額だけで管理するシンプルなFX収支カレンダー",
+  "description": "プラス/マイナスと金額だけで管理するシンプルなFX収支カレンダー",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
