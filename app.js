@@ -423,8 +423,11 @@ const els = {
   dayNet: document.getElementById('dayNet'),
   quoteText: document.getElementById('quoteText'),
   quoteAuthor: document.getElementById('quoteAuthor'),
+  installHelp: document.getElementById('installHelp'),
   helpDialog: document.getElementById('helpDialog'),
 };
+
+updateInstallHelpVisibility();
 
 document.getElementById('prevMonth').addEventListener('click', () => {
   state.shown = new Date(state.shown.getFullYear(), state.shown.getMonth() - 1, 1);
@@ -466,7 +469,7 @@ els.lossInput.addEventListener('input', updateDayPreview);
 
 document.getElementById('quoteShuffle').addEventListener('click', renderQuote);
 
-document.getElementById('installHelp').addEventListener('click', () => {
+els.installHelp.addEventListener('click', () => {
   if (typeof els.helpDialog.showModal === 'function') els.helpDialog.showModal();
   else alert('Safariで共有ボタンから「ホーム画面に追加」を選びます。');
 });
@@ -514,6 +517,12 @@ let lastQuoteIndex = quoteShuffleState.last;
 
 render();
 renderQuote();
+
+function updateInstallHelpVisibility() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator?.standalone === true;
+  els.installHelp.hidden = isStandalone;
+}
 
 function renderQuote() {
   const index = nextQuoteIndex();
