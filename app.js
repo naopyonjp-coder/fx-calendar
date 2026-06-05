@@ -521,7 +521,10 @@ renderQuote();
 function updateInstallHelpVisibility() {
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     || window.navigator?.standalone === true;
-  els.installHelp.hidden = isStandalone;
+  const userAgent = window.navigator?.userAgent || '';
+  const isMobileBrowser = /iPhone|iPad|iPod|Android/i.test(userAgent)
+    || window.matchMedia('(pointer: coarse)').matches;
+  els.installHelp.hidden = isStandalone || !isMobileBrowser;
 }
 
 function renderQuote() {

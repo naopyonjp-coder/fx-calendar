@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fx-income-calendar-v3';
+const CACHE_NAME = 'fx-income-calendar-v4';
 const ASSETS = [
   './',
   './index.html',
