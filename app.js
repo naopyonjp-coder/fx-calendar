@@ -409,6 +409,7 @@ const state = {
   selected: toKey(new Date()),
   records: loadRecords(),
 };
+let deferredInstallPrompt = null;
 
 const els = {
   monthTitle: document.getElementById('monthTitle'),
@@ -428,6 +429,17 @@ const els = {
 };
 
 updateInstallHelpVisibility();
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  updateInstallHelpVisibility();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallHelpVisibility();
+});
 
 document.getElementById('prevMonth').addEventListener('click', () => {
   state.shown = new Date(state.shown.getFullYear(), state.shown.getMonth() - 1, 1);
@@ -469,7 +481,14 @@ els.lossInput.addEventListener('input', updateDayPreview);
 
 document.getElementById('quoteShuffle').addEventListener('click', renderQuote);
 
-els.installHelp.addEventListener('click', () => {
+els.installHelp.addEventListener('click', async () => {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice.catch(() => {});
+    deferredInstallPrompt = null;
+    updateInstallHelpVisibility();
+    return;
+  }
   if (typeof els.helpDialog.showModal === 'function') els.helpDialog.showModal();
   else alert('Safariで共有ボタンから「ホーム画面に追加」を選びます。');
 });
@@ -524,7 +543,17 @@ function updateInstallHelpVisibility() {
   const userAgent = window.navigator?.userAgent || '';
   const isMobileBrowser = /iPhone|iPad|iPod|Android/i.test(userAgent)
     || window.matchMedia('(pointer: coarse)').matches;
-  els.installHelp.hidden = isStandalone || !isMobileBrowser;
+  if (isStandalone) {
+    els.installHelp.hidden = true;
+    return;
+  }
+  if (deferredInstallPrompt) {
+    els.installHelp.textContent = 'インストール';
+    els.installHelp.hidden = false;
+    return;
+  }
+  els.installHelp.textContent = 'ホーム追加';
+  els.installHelp.hidden = !isMobileBrowser;
 }
 
 function renderQuote() {
