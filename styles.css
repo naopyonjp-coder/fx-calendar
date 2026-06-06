@@ -154,12 +154,12 @@ h3 { margin-bottom: 0; font-size: 20px; }
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-bottom: 14px;
 }
 
-.summary-card {
+.summary-card, .year-summary-card {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -171,24 +171,30 @@ h3 { margin-bottom: 0; font-size: 20px; }
   background: linear-gradient(135deg, #ffffff 0%, #effaff 100%);
 }
 
-.summary-card p {
+.summary-card p, .year-summary-card p {
   margin-bottom: 8px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 800;
 }
 
-.summary-card strong {
+.summary-card strong, .year-summary-card strong {
   display: block;
   font-size: clamp(24px, 6vw, 36px);
   letter-spacing: -.04em;
 }
 
-.summary-card span {
+.summary-card span, .year-summary-card span {
   display: block;
   margin-top: 6px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.year-summary-card {
+  box-shadow: none;
+  margin: 14px 0 12px;
+  background: var(--bg);
 }
 
 .calendar-card, .entry-panel, .data-panel {
@@ -353,7 +359,6 @@ summary { cursor: pointer; font-weight: 900; }
 .help-dialog p { color: var(--muted); line-height: 1.7; }
 
 @media (max-width: 640px) {
-  .summary-grid { grid-template-columns: 1fr; }
   .day-cell { border-radius: 14px; padding: 7px; }
   .day-amount { font-size: 10px; }
 }

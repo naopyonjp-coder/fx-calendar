@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
-  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="stylesheet" href="styles.css?v=9" />
 </head>
 <body>
   <main class="app-shell">
@@ -44,11 +44,6 @@
         <p>月別合計</p>
         <strong id="monthNet">¥0</strong>
         <span id="monthBreakdown">プラス ¥0 / マイナス ¥0</span>
-      </article>
-      <article class="summary-card">
-        <p>年別合計</p>
-        <strong id="yearNet">¥0</strong>
-        <span id="yearBreakdown">プラス ¥0 / マイナス ¥0</span>
       </article>
     </section>
 
@@ -99,6 +94,11 @@
     <section class="data-panel" aria-label="データ管理">
       <details>
         <summary>データ管理</summary>
+        <article class="year-summary-card">
+          <p>年別合計</p>
+          <strong id="yearNet">¥0</strong>
+          <span id="yearBreakdown">プラス ¥0 / マイナス ¥0</span>
+        </article>
         <p>データはこの端末のブラウザ内に保存されます。機種変更前はバックアップをおすすめします。</p>
         <div class="action-row small">
           <button id="exportData" type="button" class="ghost-button">バックアップ</button>
@@ -117,6 +117,6 @@
     <button id="closeHelp" type="button" class="main-button">OK</button>
   </dialog>
 
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>
