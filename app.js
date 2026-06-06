@@ -409,7 +409,6 @@ const state = {
   selected: toKey(new Date()),
   records: loadRecords(),
 };
-let deferredInstallPrompt = null;
 
 const els = {
   monthTitle: document.getElementById('monthTitle'),
@@ -427,22 +426,7 @@ const els = {
   dayNet: document.getElementById('dayNet'),
   quoteText: document.getElementById('quoteText'),
   quoteAuthor: document.getElementById('quoteAuthor'),
-  installHelp: document.getElementById('installHelp'),
-  helpDialog: document.getElementById('helpDialog'),
 };
-
-updateInstallHelpVisibility();
-
-window.addEventListener('beforeinstallprompt', (event) => {
-  event.preventDefault();
-  deferredInstallPrompt = event;
-  updateInstallHelpVisibility();
-});
-
-window.addEventListener('appinstalled', () => {
-  deferredInstallPrompt = null;
-  updateInstallHelpVisibility();
-});
 
 document.getElementById('prevMonth').addEventListener('click', () => {
   state.shown = new Date(state.shown.getFullYear(), state.shown.getMonth() - 1, 1);
@@ -486,20 +470,6 @@ els.amountInput.addEventListener('input', updateDayPreview);
 
 document.getElementById('quoteShuffle').addEventListener('click', renderQuote);
 
-els.installHelp.addEventListener('click', async () => {
-  if (deferredInstallPrompt) {
-    deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice.catch(() => {});
-    deferredInstallPrompt = null;
-    updateInstallHelpVisibility();
-    return;
-  }
-  if (typeof els.helpDialog.showModal === 'function') els.helpDialog.showModal();
-  else alert('Safariで共有ボタンから「ホーム画面に追加」を選びます。');
-});
-
-document.getElementById('closeHelp').addEventListener('click', () => els.helpDialog.close());
-
 document.getElementById('exportData').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(state.records, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -541,25 +511,6 @@ let lastQuoteIndex = quoteShuffleState.last;
 
 render();
 renderQuote();
-
-function updateInstallHelpVisibility() {
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator?.standalone === true;
-  const userAgent = window.navigator?.userAgent || '';
-  const isMobileBrowser = /iPhone|iPad|iPod|Android/i.test(userAgent)
-    || window.matchMedia('(pointer: coarse)').matches;
-  if (isStandalone) {
-    els.installHelp.hidden = true;
-    return;
-  }
-  if (deferredInstallPrompt) {
-    els.installHelp.textContent = 'インストール';
-    els.installHelp.hidden = false;
-    return;
-  }
-  els.installHelp.textContent = 'ホーム追加';
-  els.installHelp.hidden = !isMobileBrowser;
-}
 
 function renderQuote() {
   const index = nextQuoteIndex();

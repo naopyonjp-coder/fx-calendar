@@ -20,7 +20,6 @@
         <p class="eyebrow">FX PROFIT TRACKER</p>
         <h1>FX収支カレンダー</h1>
       </div>
-      <button class="install-help" id="installHelp" type="button" hidden>ホーム追加</button>
     </header>
 
 
@@ -110,6 +109,10 @@
           </div>
         </section>
         <p>データはこの端末のブラウザ内に保存されます。機種変更前はバックアップをおすすめします。</p>
+        <details class="install-guide">
+          <summary>ホーム画面に追加する方法</summary>
+          <p>iPhoneのSafariでこのページを開き、共有ボタンから「ホーム画面に追加」を選びます。</p>
+        </details>
         <div class="action-row small">
           <button id="exportData" type="button" class="ghost-button">バックアップ</button>
           <label class="import-label">
@@ -121,12 +124,6 @@
     </section>
   </main>
 
-  <dialog id="helpDialog" class="help-dialog">
-    <h2>ホーム画面に追加</h2>
-    <p>iPhoneの場合はSafariでこのページを開き、共有ボタンから「ホーム画面に追加」を選びます。</p>
-    <button id="closeHelp" type="button" class="main-button">OK</button>
-  </dialog>
-
-  <script src="app.js?v=11"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>
