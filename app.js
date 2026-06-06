@@ -418,6 +418,8 @@ const els = {
   monthBreakdown: document.getElementById('monthBreakdown'),
   yearNet: document.getElementById('yearNet'),
   yearBreakdown: document.getElementById('yearBreakdown'),
+  monthlyTrend: document.getElementById('monthlyTrend'),
+  yearlyTrend: document.getElementById('yearlyTrend'),
   selectedDateTitle: document.getElementById('selectedDateTitle'),
   typeProfit: document.getElementById('typeProfit'),
   typeLoss: document.getElementById('typeLoss'),
@@ -676,6 +678,7 @@ function renderSummary() {
   els.monthBreakdown.textContent = `プラス ${yen.format(monthSummary.win)} / マイナス ${yen.format(monthSummary.loss)}`;
   setMoney(els.yearNet, yearSummary.net);
   els.yearBreakdown.textContent = `プラス ${yen.format(yearSummary.win)} / マイナス ${yen.format(yearSummary.loss)}`;
+  renderTrends(year);
 }
 
 function summarize(filter) {
@@ -693,6 +696,69 @@ function updateDayPreview() {
   const amount = normalizeAmount(els.amountInput.value);
   const net = els.typeLoss.checked ? -amount : amount;
   setMoney(els.dayNet, net);
+}
+
+function renderTrends(year) {
+  renderBarChart(els.monthlyTrend, getMonthlyTrend(year), 'まだ月別データがありません');
+  renderBarChart(els.yearlyTrend, getYearlyTrend(), 'まだ年別データがありません');
+}
+
+function getMonthlyTrend(year) {
+  return Array.from({ length: 12 }, (_, index) => {
+    const month = index + 1;
+    const summary = summarize(({ y, m }) => y === year && m === month);
+    return {
+      label: `${month}月`,
+      value: summary.net,
+      detail: `プラス ${yen.format(summary.win)} / マイナス ${yen.format(summary.loss)}`,
+    };
+  });
+}
+
+function getYearlyTrend() {
+  const years = new Set(Object.keys(state.records).map(key => Number(key.slice(0, 4))).filter(Number.isFinite));
+  years.add(state.shown.getFullYear());
+  return Array.from(years).sort((a, b) => a - b).map(year => {
+    const summary = summarize(({ y }) => y === year);
+    return {
+      label: `${year}年`,
+      value: summary.net,
+      detail: `プラス ${yen.format(summary.win)} / マイナス ${yen.format(summary.loss)}`,
+    };
+  });
+}
+
+function renderBarChart(container, items, emptyText) {
+  container.innerHTML = '';
+  const max = Math.max(...items.map(item => Math.abs(item.value)), 0);
+  if (max === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'chart-empty';
+    empty.textContent = emptyText;
+    container.appendChild(empty);
+    return;
+  }
+
+  items.forEach(item => {
+    const tone = item.value < 0 ? 'loss' : item.value > 0 ? 'profit' : 'zero';
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    const label = document.createElement('span');
+    label.className = 'bar-label';
+    label.textContent = item.label;
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+    const fill = document.createElement('span');
+    fill.className = `bar-fill ${tone}`;
+    fill.style.width = `${Math.max(Math.abs(item.value) / max * 100, 3)}%`;
+    track.appendChild(fill);
+    const amount = document.createElement('span');
+    amount.className = `bar-value ${tone === 'loss' ? 'negative' : tone === 'profit' ? 'positive' : ''}`;
+    amount.textContent = yen.format(item.value);
+    amount.title = item.detail;
+    row.append(label, track, amount);
+    container.appendChild(row);
+  });
 }
 
 function getRecordNet(record) {
