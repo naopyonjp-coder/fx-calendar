@@ -403,7 +403,7 @@ const TRADING_QUOTES = [
     "author": "アンドレ・コステラニー"
   }
 ];
-const yen = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 });
+const moneyNumber = new Intl.NumberFormat('ja-JP', { maximumFractionDigits: 8 });
 const rateNumber = new Intl.NumberFormat('ja-JP', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const USDJPY_DAILY_URL = 'https://api.twelvedata.com/time_series?symbol=USD/JPY&interval=1day&outputsize=3&apikey=demo';
 const state = {
@@ -674,9 +674,9 @@ function renderSummary() {
   const yearSummary = summarize(({ y }) => y === year);
 
   setMoney(els.monthNet, monthSummary.net);
-  els.monthBreakdown.textContent = `プラス ${yen.format(monthSummary.win)} / マイナス ${yen.format(monthSummary.loss)}`;
+  els.monthBreakdown.textContent = `プラス ${formatMoney(monthSummary.win)} / マイナス ${formatMoney(monthSummary.loss)}`;
   setMoney(els.yearNet, yearSummary.net);
-  els.yearBreakdown.textContent = `プラス ${yen.format(yearSummary.win)} / マイナス ${yen.format(yearSummary.loss)}`;
+  els.yearBreakdown.textContent = `プラス ${formatMoney(yearSummary.win)} / マイナス ${formatMoney(yearSummary.loss)}`;
   renderTrends(year);
 }
 
@@ -709,7 +709,7 @@ function getMonthlyTrend(year) {
     return {
       label: `${month}月`,
       value: summary.net,
-      detail: `プラス ${yen.format(summary.win)} / マイナス ${yen.format(summary.loss)}`,
+      detail: `プラス ${formatMoney(summary.win)} / マイナス ${formatMoney(summary.loss)}`,
     };
   });
 }
@@ -722,7 +722,7 @@ function getYearlyTrend() {
     return {
       label: `${year}年`,
       value: summary.net,
-      detail: `プラス ${yen.format(summary.win)} / マイナス ${yen.format(summary.loss)}`,
+      detail: `プラス ${formatMoney(summary.win)} / マイナス ${formatMoney(summary.loss)}`,
     };
   });
 }
@@ -753,7 +753,7 @@ function renderBarChart(container, items, emptyText) {
     track.appendChild(fill);
     const amount = document.createElement('span');
     amount.className = `bar-value ${tone === 'loss' ? 'negative' : tone === 'profit' ? 'positive' : ''}`;
-    amount.textContent = yen.format(item.value);
+    amount.textContent = formatMoney(item.value);
     amount.title = item.detail;
     row.append(label, track, amount);
     container.appendChild(row);
@@ -765,14 +765,21 @@ function getRecordNet(record) {
 }
 
 function setMoney(element, value) {
-  element.textContent = yen.format(value);
+  element.textContent = formatMoney(value);
   element.classList.toggle('positive', value > 0);
   element.classList.toggle('negative', value < 0);
 }
 
+function formatMoney(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '¥0';
+  const sign = number < 0 ? '-' : '';
+  return `${sign}¥${moneyNumber.format(Math.abs(number))}`;
+}
+
 function normalizeAmount(value) {
   const number = Number(value);
-  return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
+  return Number.isFinite(number) && number > 0 ? number : 0;
 }
 
 function toKey(date) {
@@ -790,9 +797,7 @@ function parseKey(key) {
 function shortYen(value) {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
-  if (abs >= 100000000) return `${sign}${(abs / 100000000).toFixed(1).replace('.0', '')}億`;
-  if (abs >= 10000) return `${sign}${(abs / 10000).toFixed(1).replace('.0', '')}万`;
-  return `${sign}${abs.toLocaleString('ja-JP')}`;
+  return `${sign}${moneyNumber.format(abs)}`;
 }
 
 function loadRecords() {
