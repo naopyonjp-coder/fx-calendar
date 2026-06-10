@@ -404,6 +404,8 @@ const TRADING_QUOTES = [
   }
 ];
 const yen = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 });
+const rateNumber = new Intl.NumberFormat('ja-JP', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const USDJPY_DAILY_URL = 'https://api.twelvedata.com/time_series?symbol=USD/JPY&interval=1day&outputsize=3&apikey=demo';
 const state = {
   shown: new Date(),
   selected: toKey(new Date()),
@@ -426,6 +428,9 @@ const els = {
   dayNet: document.getElementById('dayNet'),
   quoteText: document.getElementById('quoteText'),
   quoteAuthor: document.getElementById('quoteAuthor'),
+  pivotDate: document.getElementById('pivotDate'),
+  pivotS1: document.getElementById('pivotS1'),
+  pivotS2: document.getElementById('pivotS2'),
 };
 
 document.getElementById('prevMonth').addEventListener('click', () => {
@@ -511,12 +516,47 @@ let lastQuoteIndex = quoteShuffleState.last;
 
 render();
 renderQuote();
+renderUsdJpyPivot();
 
 function renderQuote() {
   const index = nextQuoteIndex();
   const quote = TRADING_QUOTES[index];
   els.quoteText.textContent = `「${quote.text}」`;
   els.quoteAuthor.textContent = `by ${quote.author}（意訳）`;
+}
+
+async function renderUsdJpyPivot() {
+  try {
+    const response = await fetch(USDJPY_DAILY_URL, { cache: 'no-store' });
+    if (!response.ok) throw new Error('pivot request failed');
+    const data = await response.json();
+    const candle = data.values?.find(item => {
+      return Number.isFinite(Number(item.high))
+        && Number.isFinite(Number(item.low))
+        && Number.isFinite(Number(item.close));
+    });
+    if (!candle) throw new Error('pivot data missing');
+
+    const high = Number(candle.high);
+    const low = Number(candle.low);
+    const close = Number(candle.close);
+    const pivot = (high + low + close) / 3;
+    const s1 = 2 * pivot - high;
+    const s2 = pivot - (high - low);
+    els.pivotDate.textContent = `${formatPivotDate(candle.datetime)} NY引け`;
+    els.pivotS1.textContent = rateNumber.format(s1);
+    els.pivotS2.textContent = rateNumber.format(s2);
+  } catch (error) {
+    els.pivotDate.textContent = '取得できませんでした';
+    els.pivotS1.textContent = '---';
+    els.pivotS2.textContent = '---';
+  }
+}
+
+function formatPivotDate(value) {
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return value;
+  return `${month}/${day}`;
 }
 
 function nextQuoteIndex() {
