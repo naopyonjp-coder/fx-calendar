@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'fx-income-calendar-v1';
 const QUOTE_STATE_KEY = 'fx-income-calendar-quote-state-v2';
+const PIVOT_VISIBILITY_KEY = 'fx-income-calendar-pivot-visible-v1';
 
 const TRADING_QUOTES = [
   {
@@ -444,6 +445,8 @@ const els = {
   dayNet: document.getElementById('dayNet'),
   quoteText: document.getElementById('quoteText'),
   quoteAuthor: document.getElementById('quoteAuthor'),
+  pivotCard: document.getElementById('pivotCard'),
+  pivotToggle: document.getElementById('pivotToggle'),
   pivotDate: document.getElementById('pivotDate'),
   pivotR1: document.getElementById('pivotR1'),
   pivotR2: document.getElementById('pivotR2'),
@@ -492,6 +495,7 @@ els.typeLoss.addEventListener('change', updateDayPreview);
 els.amountInput.addEventListener('input', updateDayPreview);
 
 document.getElementById('quoteShuffle').addEventListener('click', renderQuote);
+els.pivotToggle.addEventListener('click', togglePivotVisibility);
 
 document.getElementById('exportData').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(state.records, null, 2)], { type: 'application/json' });
@@ -531,10 +535,12 @@ if ('serviceWorker' in navigator) {
 const quoteShuffleState = loadQuoteShuffleState();
 let quoteQueue = quoteShuffleState.queue;
 let lastQuoteIndex = quoteShuffleState.last;
+let isPivotVisible = localStorage.getItem(PIVOT_VISIBILITY_KEY) !== 'hidden';
 
 render();
 renderQuote();
-renderUsdJpyPivot();
+applyPivotVisibility();
+if (isPivotVisible) renderUsdJpyPivot();
 loadEconomicEvents();
 
 function renderQuote() {
@@ -545,6 +551,7 @@ function renderQuote() {
 }
 
 async function renderUsdJpyPivot() {
+  if (!isPivotVisible) return;
   try {
     const response = await fetch(USDJPY_DAILY_URL, { cache: 'no-store' });
     if (!response.ok) throw new Error('pivot request failed');
@@ -578,6 +585,19 @@ async function renderUsdJpyPivot() {
     els.pivotS1.textContent = '---';
     els.pivotS2.textContent = '---';
   }
+}
+
+function togglePivotVisibility() {
+  isPivotVisible = !isPivotVisible;
+  localStorage.setItem(PIVOT_VISIBILITY_KEY, isPivotVisible ? 'visible' : 'hidden');
+  applyPivotVisibility();
+  if (isPivotVisible && els.pivotR1.textContent === '---') renderUsdJpyPivot();
+}
+
+function applyPivotVisibility() {
+  els.pivotCard.classList.toggle('collapsed', !isPivotVisible);
+  els.pivotToggle.textContent = isPivotVisible ? '非表示' : 'ピボット表示';
+  els.pivotToggle.setAttribute('aria-pressed', String(!isPivotVisible));
 }
 
 async function loadEconomicEvents() {

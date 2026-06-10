@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
-  <link rel="stylesheet" href="styles.css?v=21" />
+  <link rel="stylesheet" href="styles.css?v=22" />
 </head>
 <body>
   <main class="app-shell">
@@ -32,8 +32,8 @@
       <button id="quoteShuffle" type="button" class="quote-button" aria-label="格言を入れ替える">↻</button>
     </section>
 
-    <section class="pivot-card" aria-label="ドル円ピボット">
-      <div>
+    <section id="pivotCard" class="pivot-card" aria-label="ドル円ピボット">
+      <div class="pivot-copy">
         <p class="eyebrow">USD/JPY NY CLOSE PIVOT</p>
         <p id="pivotDate" class="pivot-date">取得中</p>
       </div>
@@ -55,6 +55,7 @@
           <strong id="pivotS2">---</strong>
         </div>
       </div>
+      <button id="pivotToggle" type="button" class="pivot-toggle">非表示</button>
     </section>
 
     <section class="month-switcher" aria-label="月の切り替え">
@@ -152,6 +153,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=21"></script>
+  <script src="app.js?v=22"></script>
 </body>
 </html>
