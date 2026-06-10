@@ -429,6 +429,8 @@ const els = {
   quoteText: document.getElementById('quoteText'),
   quoteAuthor: document.getElementById('quoteAuthor'),
   pivotDate: document.getElementById('pivotDate'),
+  pivotR1: document.getElementById('pivotR1'),
+  pivotR2: document.getElementById('pivotR2'),
   pivotS1: document.getElementById('pivotS1'),
   pivotS2: document.getElementById('pivotS2'),
 };
@@ -541,13 +543,19 @@ async function renderUsdJpyPivot() {
     const low = Number(candle.low);
     const close = Number(candle.close);
     const pivot = (high + low + close) / 3;
+    const r1 = 2 * pivot - low;
+    const r2 = pivot + (high - low);
     const s1 = 2 * pivot - high;
     const s2 = pivot - (high - low);
     els.pivotDate.textContent = `${formatPivotDate(candle.datetime)} NY引け`;
+    els.pivotR1.textContent = rateNumber.format(r1);
+    els.pivotR2.textContent = rateNumber.format(r2);
     els.pivotS1.textContent = rateNumber.format(s1);
     els.pivotS2.textContent = rateNumber.format(s2);
   } catch (error) {
     els.pivotDate.textContent = '取得できませんでした';
+    els.pivotR1.textContent = '---';
+    els.pivotR2.textContent = '---';
     els.pivotS1.textContent = '---';
     els.pivotS2.textContent = '---';
   }
