@@ -274,9 +274,10 @@ h3 { margin-bottom: 0; font-size: 20px; }
   border-radius: 18px;
   padding: 8px;
   text-align: left;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: grid;
+  grid-template-rows: 16px minmax(18px, auto) 36px;
+  align-content: space-between;
+  gap: 4px;
   transition: transform .12s ease, border-color .12s ease, background .12s ease;
 }
 
@@ -286,14 +287,15 @@ h3 { margin-bottom: 0; font-size: 20px; }
 .day-cell.selected { outline: 3px solid rgba(66,185,255,.24); border-color: var(--accent); }
 .day-cell.profit { background: var(--profit-soft); }
 .day-cell.loss { background: var(--loss-soft); }
-.day-number { font-weight: 900; font-size: 13px; }
-.day-amount { font-weight: 900; font-size: 12px; word-break: break-all; }
+.day-number { font-weight: 900; font-size: 13px; line-height: 16px; }
+.day-amount { align-self: start; min-height: 18px; font-weight: 900; font-size: 12px; line-height: 1.25; word-break: break-all; }
 .day-amount.profit-text, .positive { color: var(--profit); }
 .day-amount.loss-text, .negative { color: var(--loss); }
 .day-events {
   display: grid;
   gap: 3px;
-  min-height: 16px;
+  min-height: 36px;
+  align-content: start;
 }
 
 .day-event {
