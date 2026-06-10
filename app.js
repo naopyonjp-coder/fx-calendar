@@ -405,7 +405,7 @@ const TRADING_QUOTES = [
 ];
 const moneyNumber = new Intl.NumberFormat('ja-JP', { maximumFractionDigits: 8 });
 const rateNumber = new Intl.NumberFormat('ja-JP', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-const USDJPY_DAILY_URL = 'https://api.twelvedata.com/time_series?symbol=USD/JPY&interval=1day&outputsize=3&apikey=demo';
+const USDJPY_DAILY_URL = 'https://api.twelvedata.com/time_series?symbol=USD/JPY&interval=1day&outputsize=5&apikey=demo';
 const state = {
   shown: new Date(),
   selected: toKey(new Date()),
@@ -532,10 +532,12 @@ async function renderUsdJpyPivot() {
     const response = await fetch(USDJPY_DAILY_URL, { cache: 'no-store' });
     if (!response.ok) throw new Error('pivot request failed');
     const data = await response.json();
+    const nyToday = getNewYorkDateKey();
     const candle = data.values?.find(item => {
       return Number.isFinite(Number(item.high))
         && Number.isFinite(Number(item.low))
-        && Number.isFinite(Number(item.close));
+        && Number.isFinite(Number(item.close))
+        && item.datetime < nyToday;
     });
     if (!candle) throw new Error('pivot data missing');
 
@@ -565,6 +567,17 @@ function formatPivotDate(value) {
   const [year, month, day] = value.split('-').map(Number);
   if (!year || !month || !day) return value;
   return `${month}/${day}`;
+}
+
+function getNewYorkDateKey() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 function nextQuoteIndex() {
