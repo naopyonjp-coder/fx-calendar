@@ -445,6 +445,11 @@ input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 4px 
 .data-panel { padding: 14px 18px; }
 summary { cursor: pointer; font-weight: 900; }
 .data-panel p { margin: 12px 0; color: var(--muted); line-height: 1.7; font-size: 13px; }
+.data-panel .event-disclaimer {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
 
 .trend-panel {
   display: grid;
