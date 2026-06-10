@@ -406,7 +406,8 @@ const TRADING_QUOTES = [
 const moneyNumber = new Intl.NumberFormat('ja-JP', { maximumFractionDigits: 8 });
 const rateNumber = new Intl.NumberFormat('ja-JP', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const USDJPY_DAILY_URL = 'https://api.twelvedata.com/time_series?symbol=USD/JPY&interval=1day&outputsize=5&apikey=demo';
-const US_ECONOMIC_EVENTS = [
+const ECONOMIC_EVENTS_URL = 'economic-events.json';
+const FALLBACK_US_ECONOMIC_EVENTS = [
   { date: '2026-06-05', time: '21:30', title: '雇用統計' },
   { date: '2026-06-10', time: '21:30', title: 'CPI' },
   { date: '2026-06-11', time: '21:30', title: 'PPI / 新規失業保険申請件数' },
@@ -419,6 +420,7 @@ const US_ECONOMIC_EVENTS = [
   { date: '2026-06-25', time: '21:30', title: 'GDP / 新規失業保険申請件数' },
   { date: '2026-06-26', time: '21:30', title: 'PCEデフレーター' },
 ];
+let economicEvents = [...FALLBACK_US_ECONOMIC_EVENTS];
 const state = {
   shown: new Date(),
   selected: toKey(new Date()),
@@ -533,6 +535,7 @@ let lastQuoteIndex = quoteShuffleState.last;
 render();
 renderQuote();
 renderUsdJpyPivot();
+loadEconomicEvents();
 
 function renderQuote() {
   const index = nextQuoteIndex();
@@ -574,6 +577,19 @@ async function renderUsdJpyPivot() {
     els.pivotR2.textContent = '---';
     els.pivotS1.textContent = '---';
     els.pivotS2.textContent = '---';
+  }
+}
+
+async function loadEconomicEvents() {
+  try {
+    const response = await fetch(ECONOMIC_EVENTS_URL, { cache: 'no-store' });
+    if (!response.ok) throw new Error('economic events request failed');
+    const data = await response.json();
+    if (!Array.isArray(data.events)) throw new Error('economic events missing');
+    economicEvents = data.events.filter(isValidEconomicEvent);
+    render();
+  } catch (error) {
+    economicEvents = [...FALLBACK_US_ECONOMIC_EVENTS];
   }
 }
 
@@ -732,7 +748,16 @@ function renderSelectedEvents() {
 }
 
 function getEventsForDate(key) {
-  return US_ECONOMIC_EVENTS.filter(event => event.date === key);
+  return economicEvents.filter(event => event.date === key);
+}
+
+function isValidEconomicEvent(event) {
+  return typeof event?.date === 'string'
+    && /^\d{4}-\d{2}-\d{2}$/.test(event.date)
+    && typeof event.time === 'string'
+    && /^\d{2}:\d{2}$/.test(event.time)
+    && typeof event.title === 'string'
+    && event.title.trim() !== '';
 }
 
 function renderSummary() {

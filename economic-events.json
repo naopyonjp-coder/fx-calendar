@@ -1,0 +1,125 @@
+{
+  "updatedAt": "2026-06-10T18:57:02.571Z",
+  "sources": [
+    "https://www.bls.gov/schedule/news_release/bls.ics",
+    "https://apps.bea.gov/API/signup/release_dates.json",
+    "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+  ],
+  "events": [
+    {
+      "date": "2026-05-05",
+      "time": "21:30",
+      "title": "貿易収支"
+    },
+    {
+      "date": "2026-05-05",
+      "time": "23:00",
+      "title": "JOLTS求人件数"
+    },
+    {
+      "date": "2026-05-08",
+      "time": "21:30",
+      "title": "雇用統計"
+    },
+    {
+      "date": "2026-05-12",
+      "time": "21:30",
+      "title": "CPI"
+    },
+    {
+      "date": "2026-05-13",
+      "time": "21:30",
+      "title": "PPI"
+    },
+    {
+      "date": "2026-05-14",
+      "time": "21:30",
+      "title": "輸入・輸出物価"
+    },
+    {
+      "date": "2026-05-28",
+      "time": "21:30",
+      "title": "GDP / PCE"
+    },
+    {
+      "date": "2026-06-02",
+      "time": "23:00",
+      "title": "JOLTS求人件数"
+    },
+    {
+      "date": "2026-06-05",
+      "time": "21:30",
+      "title": "雇用統計"
+    },
+    {
+      "date": "2026-06-09",
+      "time": "21:30",
+      "title": "貿易収支"
+    },
+    {
+      "date": "2026-06-10",
+      "time": "21:30",
+      "title": "CPI"
+    },
+    {
+      "date": "2026-06-11",
+      "time": "21:30",
+      "title": "PPI"
+    },
+    {
+      "date": "2026-06-16",
+      "time": "21:30",
+      "title": "輸入・輸出物価"
+    },
+    {
+      "date": "2026-06-18",
+      "time": "03:00",
+      "title": "FOMC政策金利"
+    },
+    {
+      "date": "2026-06-25",
+      "time": "21:30",
+      "title": "GDP / PCE"
+    },
+    {
+      "date": "2026-06-30",
+      "time": "23:00",
+      "title": "JOLTS求人件数"
+    },
+    {
+      "date": "2026-07-02",
+      "time": "21:30",
+      "title": "雇用統計"
+    },
+    {
+      "date": "2026-07-07",
+      "time": "21:30",
+      "title": "貿易収支"
+    },
+    {
+      "date": "2026-07-14",
+      "time": "21:30",
+      "title": "CPI"
+    },
+    {
+      "date": "2026-07-15",
+      "time": "21:30",
+      "title": "PPI"
+    },
+    {
+      "date": "2026-07-17",
+      "time": "21:30",
+      "title": "輸入・輸出物価"
+    },
+    {
+      "date": "2026-07-30",
+      "time": "03:00",
+      "title": "FOMC政策金利"
+    },
+    {
+      "date": "2026-07-30",
+      "time": "21:30",
+      "title": "GDP / PCE"
+    }
+  ]
+}
