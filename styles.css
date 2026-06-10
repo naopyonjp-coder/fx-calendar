@@ -290,6 +290,29 @@ h3 { margin-bottom: 0; font-size: 20px; }
 .day-amount { font-weight: 900; font-size: 12px; word-break: break-all; }
 .day-amount.profit-text, .positive { color: var(--profit); }
 .day-amount.loss-text, .negative { color: var(--loss); }
+.day-events {
+  display: grid;
+  gap: 3px;
+  min-height: 16px;
+}
+
+.day-event {
+  overflow: hidden;
+  border-radius: 6px;
+  padding: 2px 4px;
+  background: #eef6ff;
+  color: #386484;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-event.more {
+  width: fit-content;
+  color: var(--muted);
+}
 
 .entry-panel { padding: 18px; margin-bottom: 14px; }
 .entry-title-row, .action-row {
@@ -297,6 +320,40 @@ h3 { margin-bottom: 0; font-size: 20px; }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+.selected-events {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg);
+}
+
+.selected-events p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.selected-event {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.selected-event span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.selected-event strong {
+  font-size: 13px;
 }
 
 .entry-inputs {
@@ -495,6 +552,7 @@ summary { cursor: pointer; font-weight: 900; }
   }
   .day-cell { border-radius: 14px; padding: 7px; }
   .day-amount { font-size: 10px; }
+  .day-event { font-size: 8px; }
   .bar-row,
   .bar-chart.compact .bar-row {
     grid-template-columns: 42px minmax(0, 1fr);

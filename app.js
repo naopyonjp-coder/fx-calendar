@@ -406,6 +406,19 @@ const TRADING_QUOTES = [
 const moneyNumber = new Intl.NumberFormat('ja-JP', { maximumFractionDigits: 8 });
 const rateNumber = new Intl.NumberFormat('ja-JP', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const USDJPY_DAILY_URL = 'https://api.twelvedata.com/time_series?symbol=USD/JPY&interval=1day&outputsize=5&apikey=demo';
+const US_ECONOMIC_EVENTS = [
+  { date: '2026-06-05', time: '21:30', title: '雇用統計' },
+  { date: '2026-06-10', time: '21:30', title: 'CPI' },
+  { date: '2026-06-11', time: '21:30', title: 'PPI / 新規失業保険申請件数' },
+  { date: '2026-06-12', time: '23:00', title: 'ミシガン大学消費者信頼感' },
+  { date: '2026-06-16', time: '21:30', title: '小売売上高' },
+  { date: '2026-06-18', time: '03:00', title: 'FOMC政策金利' },
+  { date: '2026-06-18', time: '03:30', title: 'FOMC記者会見' },
+  { date: '2026-06-18', time: '21:30', title: '新規失業保険申請件数' },
+  { date: '2026-06-23', time: '22:45', title: 'PMI速報値' },
+  { date: '2026-06-25', time: '21:30', title: 'GDP / 新規失業保険申請件数' },
+  { date: '2026-06-26', time: '21:30', title: 'PCEデフレーター' },
+];
 const state = {
   shown: new Date(),
   selected: toKey(new Date()),
@@ -422,6 +435,7 @@ const els = {
   monthlyTrend: document.getElementById('monthlyTrend'),
   yearlyTrend: document.getElementById('yearlyTrend'),
   selectedDateTitle: document.getElementById('selectedDateTitle'),
+  selectedEvents: document.getElementById('selectedEvents'),
   typeProfit: document.getElementById('typeProfit'),
   typeLoss: document.getElementById('typeLoss'),
   amountInput: document.getElementById('amountInput'),
@@ -640,6 +654,7 @@ function renderCalendar() {
     const key = toKey(day);
     const record = state.records[key] || { win: 0, loss: 0 };
     const net = getRecordNet(record);
+    const events = getEventsForDate(key);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'day-cell';
@@ -663,7 +678,21 @@ function renderCalendar() {
     if (net > 0) amount.classList.add('profit-text');
     if (net < 0) amount.classList.add('loss-text');
     amount.textContent = net === 0 ? '' : shortYen(net);
-    button.append(num, amount);
+    const eventList = document.createElement('span');
+    eventList.className = 'day-events';
+    events.slice(0, 2).forEach(event => {
+      const eventItem = document.createElement('span');
+      eventItem.className = 'day-event';
+      eventItem.textContent = `${event.time} ${event.title}`;
+      eventList.appendChild(eventItem);
+    });
+    if (events.length > 2) {
+      const more = document.createElement('span');
+      more.className = 'day-event more';
+      more.textContent = `+${events.length - 2}`;
+      eventList.appendChild(more);
+    }
+    button.append(num, amount, eventList);
     els.calendar.appendChild(button);
   }
 }
@@ -677,7 +706,33 @@ function renderEntryPanel() {
   els.typeProfit.checked = net >= 0;
   els.typeLoss.checked = net < 0;
   els.amountInput.value = net === 0 ? '' : Math.abs(net);
+  renderSelectedEvents();
   updateDayPreview();
+}
+
+function renderSelectedEvents() {
+  const events = getEventsForDate(state.selected);
+  els.selectedEvents.innerHTML = '';
+  els.selectedEvents.hidden = events.length === 0;
+  if (events.length === 0) return;
+
+  const heading = document.createElement('p');
+  heading.textContent = '米国重要指標';
+  els.selectedEvents.appendChild(heading);
+  events.forEach(event => {
+    const item = document.createElement('div');
+    item.className = 'selected-event';
+    const time = document.createElement('span');
+    time.textContent = event.time;
+    const title = document.createElement('strong');
+    title.textContent = event.title;
+    item.append(time, title);
+    els.selectedEvents.appendChild(item);
+  });
+}
+
+function getEventsForDate(key) {
+  return US_ECONOMIC_EVENTS.filter(event => event.date === key);
 }
 
 function renderSummary() {
