@@ -1,6 +1,7 @@
 const STORAGE_KEY = 'fx-income-calendar-v1';
 const QUOTE_STATE_KEY = 'fx-income-calendar-quote-state-v2';
 const PIVOT_VISIBILITY_KEY = 'fx-income-calendar-pivot-visible-v1';
+const MAX_ENTRY_AMOUNT = 999999;
 
 const TRADING_QUOTES = [
   {
@@ -472,7 +473,7 @@ document.getElementById('todayBtn').addEventListener('click', () => {
 });
 
 document.getElementById('saveEntry').addEventListener('click', () => {
-  const amount = normalizeAmount(els.amountInput.value);
+  const amount = normalizeEntryAmount(els.amountInput.value);
   if (amount === 0) {
     delete state.records[state.selected];
   } else {
@@ -492,7 +493,10 @@ document.getElementById('clearEntry').addEventListener('click', () => {
 
 els.typeProfit.addEventListener('change', updateDayPreview);
 els.typeLoss.addEventListener('change', updateDayPreview);
-els.amountInput.addEventListener('input', updateDayPreview);
+els.amountInput.addEventListener('input', () => {
+  els.amountInput.value = formatInputAmount(els.amountInput.value);
+  updateDayPreview();
+});
 
 document.getElementById('quoteShuffle').addEventListener('click', renderQuote);
 els.pivotToggle.addEventListener('click', togglePivotVisibility);
@@ -748,7 +752,7 @@ function renderEntryPanel() {
   els.selectedDateTitle.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${day}）`;
   els.typeProfit.checked = net >= 0;
   els.typeLoss.checked = net < 0;
-  els.amountInput.value = net === 0 ? '' : Math.abs(net);
+  els.amountInput.value = net === 0 ? '' : formatInputAmount(Math.abs(net));
   renderSelectedEvents();
   updateDayPreview();
 }
@@ -812,7 +816,7 @@ function summarize(filter) {
 }
 
 function updateDayPreview() {
-  const amount = normalizeAmount(els.amountInput.value);
+  const amount = normalizeEntryAmount(els.amountInput.value);
   const net = els.typeLoss.checked ? -amount : amount;
   setMoney(els.dayNet, net);
 }
@@ -898,8 +902,20 @@ function formatMoney(value) {
 }
 
 function normalizeAmount(value) {
-  const number = Number(value);
+  const number = Number(String(value).replace(/,/g, ''));
   return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function normalizeEntryAmount(value) {
+  const number = normalizeAmount(value);
+  if (number === 0) return 0;
+  return Math.min(Math.trunc(number), MAX_ENTRY_AMOUNT);
+}
+
+function formatInputAmount(value) {
+  const digits = String(value).replace(/\D/g, '');
+  if (!digits) return '';
+  return moneyNumber.format(Math.min(Number(digits), MAX_ENTRY_AMOUNT));
 }
 
 function toKey(date) {
@@ -917,6 +933,7 @@ function parseKey(key) {
 function shortYen(value) {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
+  if (abs <= MAX_ENTRY_AMOUNT) return moneyNumber.format(abs).replace(/,/g, '');
   if (abs >= 100000000) return `${sign}${formatCompactUnit(abs / 100000000)}億`;
   if (abs >= 10000) return `${sign}${formatCompactUnit(abs / 10000)}万`;
   return `${sign}${moneyNumber.format(abs)}`;
