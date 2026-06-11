@@ -716,6 +716,13 @@ function renderCalendar() {
     amount.textContent = net === 0 ? '' : shortYen(net);
     const eventList = document.createElement('span');
     eventList.className = 'day-events';
+    if (events.length > 0) {
+      button.classList.add('has-events');
+      const eventSummary = document.createElement('span');
+      eventSummary.className = 'day-event-summary';
+      eventSummary.textContent = `指標${events.length}`;
+      eventList.appendChild(eventSummary);
+    }
     events.slice(0, 2).forEach(event => {
       const eventItem = document.createElement('span');
       eventItem.className = 'day-event';
@@ -910,7 +917,15 @@ function parseKey(key) {
 function shortYen(value) {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
+  if (abs >= 100000000) return `${sign}${formatCompactUnit(abs / 100000000)}億`;
+  if (abs >= 10000) return `${sign}${formatCompactUnit(abs / 10000)}万`;
   return `${sign}${moneyNumber.format(abs)}`;
+}
+
+function formatCompactUnit(value) {
+  if (value >= 9.5) return String(Math.round(value));
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
 function loadRecords() {
