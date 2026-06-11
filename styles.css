@@ -692,6 +692,16 @@ summary { cursor: pointer; font-weight: 900; }
 }
 
 @media (max-width: 360px) {
+  .calendar-card {
+    padding-inline: 4px;
+  }
+  .weekdays,
+  .calendar {
+    gap: 1px;
+  }
+  .day-cell {
+    padding-inline: 2px;
+  }
   .day-amount {
     font-size: 9px;
   }
