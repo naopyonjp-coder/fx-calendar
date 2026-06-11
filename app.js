@@ -1,6 +1,8 @@
 const STORAGE_KEY = 'fx-income-calendar-v1';
 const QUOTE_STATE_KEY = 'fx-income-calendar-quote-state-v2';
 const PIVOT_VISIBILITY_KEY = 'fx-income-calendar-pivot-visible-v1';
+const MONTH_NOTES_KEY = 'fx-income-calendar-month-notes-v1';
+const BACKUP_META_KEY = 'fx-income-calendar-backup-meta-v1';
 const MAX_ENTRY_AMOUNT = 999999;
 
 const TRADING_QUOTES = [
@@ -427,6 +429,8 @@ const state = {
   shown: new Date(),
   selected: toKey(new Date()),
   records: loadRecords(),
+  monthNotes: loadMonthNotes(),
+  lastBackupAt: loadLastBackupAt(),
 };
 
 const els = {
@@ -434,6 +438,10 @@ const els = {
   calendar: document.getElementById('calendar'),
   monthNet: document.getElementById('monthNet'),
   monthBreakdown: document.getElementById('monthBreakdown'),
+  monthDayStats: document.getElementById('monthDayStats'),
+  monthStreakStats: document.getElementById('monthStreakStats'),
+  monthMemoInput: document.getElementById('monthMemoInput'),
+  currentMonthBtn: document.getElementById('currentMonthBtn'),
   yearNet: document.getElementById('yearNet'),
   yearBreakdown: document.getElementById('yearBreakdown'),
   monthlyTrend: document.getElementById('monthlyTrend'),
@@ -453,6 +461,8 @@ const els = {
   pivotR2: document.getElementById('pivotR2'),
   pivotS1: document.getElementById('pivotS1'),
   pivotS2: document.getElementById('pivotS2'),
+  lastBackupAt: document.getElementById('lastBackupAt'),
+  saveToast: document.getElementById('saveToast'),
 };
 
 document.getElementById('prevMonth').addEventListener('click', () => {
@@ -466,11 +476,19 @@ document.getElementById('nextMonth').addEventListener('click', () => {
 });
 
 document.getElementById('todayBtn').addEventListener('click', () => {
+  goToToday();
+});
+
+els.currentMonthBtn.addEventListener('click', () => {
+  goToToday();
+});
+
+function goToToday() {
   const today = new Date();
   state.shown = new Date(today.getFullYear(), today.getMonth(), 1);
   state.selected = toKey(today);
   render();
-});
+}
 
 document.getElementById('saveEntry').addEventListener('click', () => {
   const amount = normalizeEntryAmount(els.amountInput.value);
@@ -483,12 +501,14 @@ document.getElementById('saveEntry').addEventListener('click', () => {
   }
   saveRecords();
   render();
+  showToast('保存しました');
 });
 
 document.getElementById('clearEntry').addEventListener('click', () => {
   delete state.records[state.selected];
   saveRecords();
   render();
+  showToast('クリアしました');
 });
 
 els.typeProfit.addEventListener('change', updateDayPreview);
@@ -497,12 +517,28 @@ els.amountInput.addEventListener('input', () => {
   els.amountInput.value = formatInputAmount(els.amountInput.value);
   updateDayPreview();
 });
+els.monthMemoInput.addEventListener('input', () => {
+  const key = toMonthKey(state.shown);
+  const note = els.monthMemoInput.value.trim();
+  if (note) {
+    state.monthNotes[key] = note;
+  } else {
+    delete state.monthNotes[key];
+  }
+  saveMonthNotes();
+});
 
 document.getElementById('quoteShuffle').addEventListener('click', renderQuote);
 els.pivotToggle.addEventListener('click', togglePivotVisibility);
 
 document.getElementById('exportData').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(state.records, null, 2)], { type: 'application/json' });
+  const payload = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    records: state.records,
+    monthNotes: state.monthNotes,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const stamp = new Date().toISOString().slice(0, 10);
@@ -510,6 +546,10 @@ document.getElementById('exportData').addEventListener('click', () => {
   a.download = `fx-income-calendar-backup-${stamp}.json`;
   a.click();
   URL.revokeObjectURL(url);
+  state.lastBackupAt = payload.exportedAt;
+  saveLastBackupAt();
+  renderBackupStatus();
+  showToast('バックアップしました');
 });
 
 document.getElementById('importData').addEventListener('change', async (event) => {
@@ -518,9 +558,12 @@ document.getElementById('importData').addEventListener('change', async (event) =
   try {
     const text = await file.text();
     const parsed = JSON.parse(text);
-    if (!isValidRecords(parsed)) throw new Error('invalid format');
-    state.records = parsed;
+    const restored = normalizeBackupData(parsed);
+    if (!restored) throw new Error('invalid format');
+    state.records = restored.records;
+    state.monthNotes = restored.monthNotes;
     saveRecords();
+    saveMonthNotes();
     render();
     alert('復元しました。');
   } catch (error) {
@@ -677,6 +720,8 @@ function render() {
   renderCalendar();
   renderEntryPanel();
   renderSummary();
+  renderMonthNote();
+  renderBackupStatus();
 }
 
 function renderCalendar() {
@@ -796,12 +841,29 @@ function renderSummary() {
   const month = state.shown.getMonth() + 1;
   const monthSummary = summarize(({ y, m }) => y === year && m === month);
   const yearSummary = summarize(({ y }) => y === year);
+  const dayStats = getMonthDayStats(year, month);
+  const streakStats = getMonthStreakStats(year, month);
 
   setMoney(els.monthNet, monthSummary.net);
   els.monthBreakdown.textContent = `プラス ${formatMoney(monthSummary.win)} / マイナス ${formatMoney(monthSummary.loss)}`;
+  els.monthDayStats.textContent = `勝ち ${dayStats.win}日 / 負け ${dayStats.loss}日 / 未入力 ${dayStats.empty}日`;
+  els.monthStreakStats.textContent = `現在 ${streakStats.currentLabel} / 最大連勝 ${streakStats.maxWin}日 / 最大連敗 ${streakStats.maxLoss}日`;
   setMoney(els.yearNet, yearSummary.net);
   els.yearBreakdown.textContent = `プラス ${formatMoney(yearSummary.win)} / マイナス ${formatMoney(yearSummary.loss)}`;
   renderTrends(year);
+}
+
+function renderMonthNote() {
+  const key = toMonthKey(state.shown);
+  if (els.monthMemoInput.value !== (state.monthNotes[key] || '')) {
+    els.monthMemoInput.value = state.monthNotes[key] || '';
+  }
+}
+
+function renderBackupStatus() {
+  els.lastBackupAt.textContent = state.lastBackupAt
+    ? `最終バックアップ: ${formatDateTime(state.lastBackupAt)}`
+    : '最終バックアップ: まだありません';
 }
 
 function summarize(filter) {
@@ -813,6 +875,52 @@ function summarize(filter) {
     sum.net = sum.win - sum.loss;
     return sum;
   }, { win: 0, loss: 0, net: 0 });
+}
+
+function getMonthDayStats(year, month) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let win = 0;
+  let loss = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const net = getRecordNet(state.records[toKey(new Date(year, month - 1, day))] || { win: 0, loss: 0 });
+    if (net > 0) win++;
+    if (net < 0) loss++;
+  }
+  return { win, loss, empty: daysInMonth - win - loss };
+}
+
+function getMonthStreakStats(year, month) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let maxWin = 0;
+  let maxLoss = 0;
+  let currentWin = 0;
+  let currentLoss = 0;
+  let latestTone = 'none';
+  let latestStreak = 0;
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const net = getRecordNet(state.records[toKey(new Date(year, month - 1, day))] || { win: 0, loss: 0 });
+    if (net > 0) {
+      currentWin++;
+      currentLoss = 0;
+      maxWin = Math.max(maxWin, currentWin);
+      latestTone = 'win';
+      latestStreak = currentWin;
+    } else if (net < 0) {
+      currentLoss++;
+      currentWin = 0;
+      maxLoss = Math.max(maxLoss, currentLoss);
+      latestTone = 'loss';
+      latestStreak = currentLoss;
+    }
+  }
+
+  const currentLabel = latestTone === 'win'
+    ? `${latestStreak}連勝`
+    : latestTone === 'loss'
+      ? `${latestStreak}連敗`
+      : '0日';
+  return { currentLabel, maxWin, maxLoss };
 }
 
 function updateDayPreview() {
@@ -925,6 +1033,12 @@ function toKey(date) {
   return `${y}-${m}-${d}`;
 }
 
+function toMonthKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
 function parseKey(key) {
   const [y, m, d] = key.split('-').map(Number);
   return new Date(y, m - 1, d);
@@ -959,6 +1073,43 @@ function saveRecords() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
 }
 
+function loadMonthNotes() {
+  try {
+    const raw = localStorage.getItem(MONTH_NOTES_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return isValidMonthNotes(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveMonthNotes() {
+  localStorage.setItem(MONTH_NOTES_KEY, JSON.stringify(state.monthNotes));
+}
+
+function loadLastBackupAt() {
+  try {
+    const raw = localStorage.getItem(BACKUP_META_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return typeof parsed.lastBackupAt === 'string' ? parsed.lastBackupAt : '';
+  } catch {
+    return '';
+  }
+}
+
+function saveLastBackupAt() {
+  localStorage.setItem(BACKUP_META_KEY, JSON.stringify({ lastBackupAt: state.lastBackupAt }));
+}
+
+function normalizeBackupData(value) {
+  if (isValidRecords(value)) return { records: value, monthNotes: {} };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const records = value.records;
+  const monthNotes = value.monthNotes || {};
+  if (!isValidRecords(records) || !isValidMonthNotes(monthNotes)) return null;
+  return { records, monthNotes };
+}
+
 function isValidRecords(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   return Object.entries(value).every(([key, record]) => {
@@ -967,4 +1118,26 @@ function isValidRecords(value) {
       && Number.isFinite(Number(record.win))
       && Number.isFinite(Number(record.loss));
   });
+}
+
+function isValidMonthNotes(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.entries(value).every(([key, note]) => {
+    return /^\d{4}-\d{2}$/.test(key) && typeof note === 'string' && note.length <= 240;
+  });
+}
+
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '不明';
+  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function showToast(message) {
+  els.saveToast.textContent = message;
+  els.saveToast.hidden = false;
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => {
+    els.saveToast.hidden = true;
+  }, 1800);
 }

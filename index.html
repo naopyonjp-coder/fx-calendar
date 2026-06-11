@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
-  <link rel="stylesheet" href="styles.css?v=34" />
+  <link rel="stylesheet" href="styles.css?v=35" />
 </head>
 <body>
   <main class="app-shell">
@@ -60,7 +60,10 @@
 
     <section class="month-switcher" aria-label="月の切り替え">
       <button id="prevMonth" type="button" aria-label="前の月へ">‹</button>
-      <h2 id="monthTitle">----</h2>
+      <div class="month-center">
+        <h2 id="monthTitle">----</h2>
+        <button id="currentMonthBtn" type="button">今月へ</button>
+      </div>
       <button id="nextMonth" type="button" aria-label="次の月へ">›</button>
     </section>
 
@@ -69,6 +72,8 @@
         <p>月別合計</p>
         <strong id="monthNet">¥0</strong>
         <span id="monthBreakdown">プラス ¥0 / マイナス ¥0</span>
+        <span id="monthDayStats">勝ち 0日 / 負け 0日 / 未入力 0日</span>
+        <span id="monthStreakStats">現在 0日 / 最大連勝 0日 / 最大連敗 0日</span>
       </article>
     </section>
 
@@ -77,6 +82,13 @@
         <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
       </div>
       <div id="calendar" class="calendar" aria-label="収支カレンダー"></div>
+    </section>
+
+    <section class="month-note-card" aria-label="月メモ">
+      <label for="monthMemoInput">
+        <span>月メモ</span>
+        <textarea id="monthMemoInput" rows="3" maxlength="240" placeholder="今月の気づき"></textarea>
+      </label>
     </section>
 
     <section class="entry-panel" aria-label="選択日の入力">
@@ -137,6 +149,7 @@
           </div>
         </section>
         <p>データはこの端末のブラウザ内に保存されます。機種変更前はバックアップをおすすめします。</p>
+        <p id="lastBackupAt" class="backup-status">最終バックアップ: まだありません</p>
         <p class="event-disclaimer">経済指標は参考表示です。発表時間の変更や延期がある場合があります。取引前に最新情報をご確認ください。</p>
         <details class="install-guide">
           <summary>ホーム画面に追加する方法</summary>
@@ -152,7 +165,8 @@
       </details>
     </section>
   </main>
+  <div id="saveToast" class="save-toast" role="status" aria-live="polite" hidden>保存しました</div>
 
-  <script src="app.js?v=34"></script>
+  <script src="app.js?v=35"></script>
 </body>
 </html>
