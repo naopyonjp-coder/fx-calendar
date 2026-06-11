@@ -655,10 +655,15 @@ summary { cursor: pointer; font-weight: 900; }
     line-height: 15px;
   }
   .day-amount {
+    width: max-content;
+    max-width: none;
     min-height: 20px;
-    font-size: 10px;
+    overflow: visible;
+    font-size: 9px;
     line-height: 20px;
     text-align: center;
+    transform: scaleX(.92);
+    transform-origin: center;
   }
   .day-events {
     min-height: 18px;
@@ -703,7 +708,8 @@ summary { cursor: pointer; font-weight: 900; }
     padding-inline: 2px;
   }
   .day-amount {
-    font-size: 9px;
+    font-size: 8.5px;
+    transform: scaleX(.9);
   }
   .pivot-levels strong {
     font-size: 13px;
