@@ -1,14 +1,15 @@
-const CACHE_NAME = 'fx-income-calendar-v35';
+const CACHE_NAME = 'fx-income-calendar-v36';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=35',
-  './app.js?v=35',
+  './styles.css?v=36',
+  './app.js?v=36',
   './economic-events.json',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/apple-touch-icon.png'
+  './icons/apple-touch-icon.png',
+  './og-image.jpg'
 ];
 
 self.addEventListener('install', event => {
