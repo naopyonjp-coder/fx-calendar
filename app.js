@@ -600,15 +600,15 @@ function renderQuote() {
 async function renderUsdJpyPivot() {
   if (!isPivotVisible) return;
   try {
-    const response = await fetch(USDJPY_DAILY_URL, { cache: 'no-store' });
+    const response = await fetch(withCacheBuster(USDJPY_DAILY_URL), { cache: 'no-store' });
     if (!response.ok) throw new Error('pivot request failed');
     const data = await response.json();
-    const nyToday = getNewYorkDateKey();
+    const latestCompletedDate = getLatestCompletedPivotDateKey();
     const candle = data.values?.find(item => {
       return Number.isFinite(Number(item.high))
         && Number.isFinite(Number(item.low))
         && Number.isFinite(Number(item.close))
-        && item.datetime < nyToday;
+        && item.datetime <= latestCompletedDate;
     });
     if (!candle) throw new Error('pivot data missing');
 
@@ -632,6 +632,11 @@ async function renderUsdJpyPivot() {
     els.pivotS1.textContent = '---';
     els.pivotS2.textContent = '---';
   }
+}
+
+function withCacheBuster(url) {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}_=${Date.now()}`;
 }
 
 function togglePivotVisibility() {
@@ -666,15 +671,35 @@ function formatPivotDate(value) {
   return `${month}/${day}`;
 }
 
-function getNewYorkDateKey() {
+function getLatestCompletedPivotDateKey() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23',
   }).formatToParts(new Date());
   const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
+  const nyDate = new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
+  const latest = Number(values.hour) >= 17 ? nyDate : addUtcDays(nyDate, -1);
+  while (latest.getUTCDay() === 0 || latest.getUTCDay() === 6) {
+    latest.setUTCDate(latest.getUTCDate() - 1);
+  }
+  return toUtcDateKey(latest);
+}
+
+function addUtcDays(date, days) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function toUtcDateKey(date) {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function nextQuoteIndex() {

@@ -1,9 +1,9 @@
-const CACHE_NAME = 'fx-income-calendar-v36';
+const CACHE_NAME = 'fx-income-calendar-v38';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=36',
-  './app.js?v=36',
+  './styles.css?v=38',
+  './app.js?v=38',
   './economic-events.json',
   './manifest.json',
   './icons/icon-192.png',
@@ -26,6 +26,8 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
   event.respondWith(
     fetch(event.request).then(response => {
       const copy = response.clone();
