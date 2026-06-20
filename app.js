@@ -872,7 +872,7 @@ function renderSummary() {
   setMoney(els.monthNet, monthSummary.net);
   els.monthBreakdown.textContent = `プラス ${formatMoney(monthSummary.win)} / マイナス ${formatMoney(monthSummary.loss)}`;
   els.monthDayStats.textContent = `勝ち ${dayStats.win}日 / 負け ${dayStats.loss}日 / 未入力 ${dayStats.empty}日`;
-  els.dayComparison.textContent = `選択日 前日比 ${formatSignedMoney(dayComparison.diff)} / 前日 ${formatMoney(dayComparison.previousNet)}`;
+  els.dayComparison.textContent = `選択日 前日比 ${formatPercentChange(dayComparison.percentChange)} / 前日まで ${formatMoney(dayComparison.previousMonthNet)}`;
   setMoney(els.yearNet, yearSummary.net);
   els.yearBreakdown.textContent = `プラス ${formatMoney(yearSummary.win)} / マイナス ${formatMoney(yearSummary.loss)}`;
   renderTrends(year);
@@ -916,13 +916,25 @@ function getMonthDayStats(year, month) {
 
 function getSelectedDayComparison() {
   const selectedDate = parseKey(state.selected);
-  const previousDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() - 1);
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth();
+  const selectedDay = selectedDate.getDate();
+  let previousMonthNet = 0;
+
+  for (let day = 1; day < selectedDay; day++) {
+    const key = toKey(new Date(year, month, day));
+    previousMonthNet += getRecordNet(state.records[key] || { win: 0, loss: 0 });
+  }
+
   const selectedNet = getRecordNet(state.records[state.selected] || { win: 0, loss: 0 });
-  const previousNet = getRecordNet(state.records[toKey(previousDate)] || { win: 0, loss: 0 });
+  const percentChange = previousMonthNet === 0
+    ? null
+    : (selectedNet / Math.abs(previousMonthNet)) * 100;
+
   return {
     selectedNet,
-    previousNet,
-    diff: selectedNet - previousNet,
+    previousMonthNet,
+    percentChange,
   };
 }
 
@@ -1012,11 +1024,12 @@ function formatMoney(value) {
   return `${sign}¥${moneyNumber.format(Math.abs(number))}`;
 }
 
-function formatSignedMoney(value) {
+function formatPercentChange(value) {
+  if (value === null || value === undefined) return '--%';
   const number = Number(value);
-  if (!Number.isFinite(number) || number === 0) return '¥0';
-  const sign = number > 0 ? '+' : '-';
-  return `${sign}¥${moneyNumber.format(Math.abs(number))}`;
+  if (!Number.isFinite(number)) return '--%';
+  const sign = number > 0 ? '+' : '';
+  return `${sign}${number.toFixed(1)}%`;
 }
 
 function normalizeAmount(value) {
