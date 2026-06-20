@@ -26,7 +26,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
-  <link rel="stylesheet" href="styles.css?v=41" />
+  <link rel="stylesheet" href="styles.css?v=42" />
 </head>
 <body>
   <main class="app-shell">
@@ -92,6 +92,7 @@
           <input id="monthCapitalInput" type="text" inputmode="numeric" maxlength="13" placeholder="例：1,000,000" autocomplete="off" />
         </label>
         <span id="dayComparison">選択日まで --% / 前日比 --pt</span>
+        <span id="fundingSummary">投入資金 -- / 入金 ¥0 / 出金 ¥0</span>
         <span id="monthDayStats">勝ち 0日 / 負け 0日 / 未入力 0日</span>
       </article>
     </section>
@@ -136,6 +137,17 @@
           <span>金額</span>
           <input id="amountInput" type="text" inputmode="numeric" maxlength="7" placeholder="例：125,000" autocomplete="off" />
         </label>
+        <div class="funding-inputs" aria-label="資金調整">
+          <p>資金調整</p>
+          <label>
+            <span>入金</span>
+            <input id="depositInput" type="text" inputmode="numeric" maxlength="13" placeholder="例：20,000" autocomplete="off" />
+          </label>
+          <label>
+            <span>出金</span>
+            <input id="withdrawalInput" type="text" inputmode="numeric" maxlength="13" placeholder="例：10,000" autocomplete="off" />
+          </label>
+        </div>
       </div>
 
       <div class="daily-result">
@@ -186,6 +198,6 @@
   </main>
   <div id="saveToast" class="save-toast" role="status" aria-live="polite" hidden>保存しました</div>
 
-  <script src="app.js?v=41"></script>
+  <script src="app.js?v=42"></script>
 </body>
 </html>

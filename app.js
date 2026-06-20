@@ -3,6 +3,7 @@ const QUOTE_STATE_KEY = 'fx-income-calendar-quote-state-v2';
 const PIVOT_VISIBILITY_KEY = 'fx-income-calendar-pivot-visible-v1';
 const MONTH_NOTES_KEY = 'fx-income-calendar-month-notes-v1';
 const MONTH_CAPITALS_KEY = 'fx-income-calendar-month-capitals-v1';
+const CAPITAL_FLOWS_KEY = 'fx-income-calendar-capital-flows-v1';
 const BACKUP_META_KEY = 'fx-income-calendar-backup-meta-v1';
 const MAX_ENTRY_AMOUNT = 999999;
 
@@ -432,6 +433,7 @@ const state = {
   records: loadRecords(),
   monthNotes: loadMonthNotes(),
   monthCapitals: loadMonthCapitals(),
+  capitalFlows: loadCapitalFlows(),
   lastBackupAt: loadLastBackupAt(),
 };
 
@@ -442,6 +444,7 @@ const els = {
   monthBreakdown: document.getElementById('monthBreakdown'),
   monthDayStats: document.getElementById('monthDayStats'),
   dayComparison: document.getElementById('dayComparison'),
+  fundingSummary: document.getElementById('fundingSummary'),
   monthCapitalInput: document.getElementById('monthCapitalInput'),
   monthMemoInput: document.getElementById('monthMemoInput'),
   currentMonthBtn: document.getElementById('currentMonthBtn'),
@@ -454,6 +457,8 @@ const els = {
   typeProfit: document.getElementById('typeProfit'),
   typeLoss: document.getElementById('typeLoss'),
   amountInput: document.getElementById('amountInput'),
+  depositInput: document.getElementById('depositInput'),
+  withdrawalInput: document.getElementById('withdrawalInput'),
   dayNet: document.getElementById('dayNet'),
   quoteText: document.getElementById('quoteText'),
   quoteAuthor: document.getElementById('quoteAuthor'),
@@ -495,6 +500,8 @@ function goToToday() {
 
 document.getElementById('saveEntry').addEventListener('click', () => {
   const amount = normalizeEntryAmount(els.amountInput.value);
+  const deposit = normalizeCapitalAmount(els.depositInput.value);
+  const withdrawal = normalizeCapitalAmount(els.withdrawalInput.value);
   if (amount === 0) {
     delete state.records[state.selected];
   } else {
@@ -502,14 +509,22 @@ document.getElementById('saveEntry').addEventListener('click', () => {
     const loss = els.typeLoss.checked ? amount : 0;
     state.records[state.selected] = { win, loss };
   }
+  if (deposit > 0 || withdrawal > 0) {
+    state.capitalFlows[state.selected] = { deposit, withdrawal };
+  } else {
+    delete state.capitalFlows[state.selected];
+  }
   saveRecords();
+  saveCapitalFlows();
   render();
   showToast('保存しました');
 });
 
 document.getElementById('clearEntry').addEventListener('click', () => {
   delete state.records[state.selected];
+  delete state.capitalFlows[state.selected];
   saveRecords();
+  saveCapitalFlows();
   render();
   showToast('クリアしました');
 });
@@ -519,6 +534,12 @@ els.typeLoss.addEventListener('change', updateDayPreview);
 els.amountInput.addEventListener('input', () => {
   els.amountInput.value = formatInputAmount(els.amountInput.value);
   updateDayPreview();
+});
+els.depositInput.addEventListener('input', () => {
+  els.depositInput.value = formatCapitalInput(els.depositInput.value);
+});
+els.withdrawalInput.addEventListener('input', () => {
+  els.withdrawalInput.value = formatCapitalInput(els.withdrawalInput.value);
 });
 els.monthCapitalInput.addEventListener('input', () => {
   els.monthCapitalInput.value = formatCapitalInput(els.monthCapitalInput.value);
@@ -548,11 +569,12 @@ els.pivotToggle.addEventListener('click', togglePivotVisibility);
 
 document.getElementById('exportData').addEventListener('click', () => {
   const payload = {
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     records: state.records,
     monthNotes: state.monthNotes,
     monthCapitals: state.monthCapitals,
+    capitalFlows: state.capitalFlows,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -579,9 +601,11 @@ document.getElementById('importData').addEventListener('change', async (event) =
     state.records = restored.records;
     state.monthNotes = restored.monthNotes;
     state.monthCapitals = restored.monthCapitals;
+    state.capitalFlows = restored.capitalFlows;
     saveRecords();
     saveMonthNotes();
     saveMonthCapitals();
+    saveCapitalFlows();
     render();
     alert('復元しました。');
   } catch (error) {
@@ -836,12 +860,15 @@ function renderCalendar() {
 function renderEntryPanel() {
   const date = parseKey(state.selected);
   const record = state.records[state.selected] || { win: 0, loss: 0 };
+  const capitalFlow = state.capitalFlows[state.selected] || { deposit: 0, withdrawal: 0 };
   const net = getRecordNet(record);
   const day = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
   els.selectedDateTitle.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${day}）`;
   els.typeProfit.checked = net >= 0;
   els.typeLoss.checked = net < 0;
   els.amountInput.value = net === 0 ? '' : formatInputAmount(Math.abs(net));
+  els.depositInput.value = normalizeCapitalAmount(capitalFlow.deposit) > 0 ? formatCapitalInput(capitalFlow.deposit) : '';
+  els.withdrawalInput.value = normalizeCapitalAmount(capitalFlow.withdrawal) > 0 ? formatCapitalInput(capitalFlow.withdrawal) : '';
   renderSelectedEvents();
   updateDayPreview();
 }
@@ -894,6 +921,7 @@ function renderSummary() {
   els.dayComparison.textContent = `選択日まで ${formatPercentChange(dayGrowth.growthRate)} / 前日比 ${formatPointChange(dayGrowth.pointChange)}`;
   els.dayComparison.classList.toggle('positive', dayGrowth.growthRate > 0);
   els.dayComparison.classList.toggle('negative', dayGrowth.growthRate < 0);
+  els.fundingSummary.textContent = `投入資金 ${formatFundingBase(dayGrowth.investedCapital)} / 入金 ${formatMoney(dayGrowth.deposits)} / 出金 ${formatMoney(dayGrowth.withdrawals)}`;
   setMoney(els.yearNet, yearSummary.net);
   els.yearBreakdown.textContent = `プラス ${formatMoney(yearSummary.win)} / マイナス ${formatMoney(yearSummary.loss)}`;
   renderTrends(year);
@@ -953,19 +981,38 @@ function getSelectedDayGrowth() {
   const capital = normalizeCapitalAmount(state.monthCapitals[monthKey] || 0);
   let selectedMonthNet = 0;
   let previousMonthNet = 0;
+  let deposits = 0;
+  let withdrawals = 0;
+  let previousDeposits = 0;
+  let previousWithdrawals = 0;
 
   for (let day = 1; day <= selectedDay; day++) {
     const key = toKey(new Date(year, month, day));
     const net = getRecordNet(state.records[key] || { win: 0, loss: 0 });
+    const flow = getCapitalFlowTotals(state.capitalFlows[key] || { deposit: 0, withdrawal: 0 });
     selectedMonthNet += net;
-    if (day < selectedDay) previousMonthNet += net;
+    deposits += flow.deposit;
+    withdrawals += flow.withdrawal;
+    if (day < selectedDay) {
+      previousMonthNet += net;
+      previousDeposits += flow.deposit;
+      previousWithdrawals += flow.withdrawal;
+    }
   }
+
+  const investedCapital = capital + deposits - withdrawals;
+  const previousInvestedCapital = capital + previousDeposits - previousWithdrawals;
+  const growthRate = investedCapital > 0 ? (selectedMonthNet / investedCapital) * 100 : null;
+  const previousGrowthRate = previousInvestedCapital > 0 ? (previousMonthNet / previousInvestedCapital) * 100 : null;
 
   return {
     selectedMonthNet,
     previousMonthNet,
-    growthRate: capital > 0 ? (selectedMonthNet / capital) * 100 : null,
-    pointChange: capital > 0 ? ((selectedMonthNet - previousMonthNet) / capital) * 100 : null,
+    investedCapital,
+    deposits,
+    withdrawals,
+    growthRate,
+    pointChange: growthRate === null || previousGrowthRate === null ? null : growthRate - previousGrowthRate,
   };
 }
 
@@ -1042,6 +1089,13 @@ function getRecordNet(record) {
   return normalizeAmount(record.win) - normalizeAmount(record.loss);
 }
 
+function getCapitalFlowTotals(flow) {
+  return {
+    deposit: normalizeCapitalAmount(flow.deposit),
+    withdrawal: normalizeCapitalAmount(flow.withdrawal),
+  };
+}
+
 function setMoney(element, value) {
   element.textContent = formatMoney(value);
   element.classList.toggle('positive', value > 0);
@@ -1053,6 +1107,12 @@ function formatMoney(value) {
   if (!Number.isFinite(number)) return '¥0';
   const sign = number < 0 ? '-' : '';
   return `${sign}¥${moneyNumber.format(Math.abs(number))}`;
+}
+
+function formatFundingBase(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return '--';
+  return formatMoney(number);
 }
 
 function formatPercentChange(value) {
@@ -1174,6 +1234,20 @@ function saveMonthCapitals() {
   localStorage.setItem(MONTH_CAPITALS_KEY, JSON.stringify(state.monthCapitals));
 }
 
+function loadCapitalFlows() {
+  try {
+    const raw = localStorage.getItem(CAPITAL_FLOWS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return isValidCapitalFlows(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCapitalFlows() {
+  localStorage.setItem(CAPITAL_FLOWS_KEY, JSON.stringify(state.capitalFlows));
+}
+
 function loadLastBackupAt() {
   try {
     const raw = localStorage.getItem(BACKUP_META_KEY);
@@ -1189,13 +1263,19 @@ function saveLastBackupAt() {
 }
 
 function normalizeBackupData(value) {
-  if (isValidRecords(value)) return { records: value, monthNotes: {}, monthCapitals: {} };
+  if (isValidRecords(value)) return { records: value, monthNotes: {}, monthCapitals: {}, capitalFlows: {} };
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const records = value.records;
   const monthNotes = value.monthNotes || {};
   const monthCapitals = value.monthCapitals || {};
-  if (!isValidRecords(records) || !isValidMonthNotes(monthNotes) || !isValidMonthCapitals(monthCapitals)) return null;
-  return { records, monthNotes, monthCapitals };
+  const capitalFlows = value.capitalFlows || {};
+  if (
+    !isValidRecords(records)
+    || !isValidMonthNotes(monthNotes)
+    || !isValidMonthCapitals(monthCapitals)
+    || !isValidCapitalFlows(capitalFlows)
+  ) return null;
+  return { records, monthNotes, monthCapitals, capitalFlows };
 }
 
 function isValidRecords(value) {
@@ -1221,6 +1301,18 @@ function isValidMonthCapitals(value) {
     return /^\d{4}-\d{2}$/.test(key)
       && Number.isFinite(Number(amount))
       && Number(amount) > 0;
+  });
+}
+
+function isValidCapitalFlows(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.entries(value).every(([key, flow]) => {
+    return /^\d{4}-\d{2}-\d{2}$/.test(key)
+      && flow && typeof flow === 'object' && !Array.isArray(flow)
+      && Number.isFinite(Number(flow.deposit))
+      && Number.isFinite(Number(flow.withdrawal))
+      && Number(flow.deposit) >= 0
+      && Number(flow.withdrawal) >= 0;
   });
 }
 
