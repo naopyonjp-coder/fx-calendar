@@ -1264,7 +1264,7 @@ function parseKey(key) {
 function shortYen(value) {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
-  if (abs <= MAX_ENTRY_AMOUNT) return moneyNumber.format(abs).replace(/,/g, '');
+  if (abs <= MAX_ENTRY_AMOUNT) return `${sign}${moneyNumber.format(abs)}`;
   if (abs >= 100000000) return `${sign}${formatCompactUnit(abs / 100000000)}億`;
   if (abs >= 10000) return `${sign}${formatCompactUnit(abs / 10000)}万`;
   return `${sign}${moneyNumber.format(abs)}`;
