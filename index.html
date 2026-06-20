@@ -26,7 +26,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
-  <link rel="stylesheet" href="styles.css?v=40" />
+  <link rel="stylesheet" href="styles.css?v=41" />
 </head>
 <body>
   <main class="app-shell">
@@ -87,8 +87,12 @@
         <p>月別合計</p>
         <strong id="monthNet">¥0</strong>
         <span id="monthBreakdown">プラス ¥0 / マイナス ¥0</span>
+        <label class="month-capital-field" for="monthCapitalInput">
+          <span>月初資金</span>
+          <input id="monthCapitalInput" type="text" inputmode="numeric" maxlength="13" placeholder="例：1,000,000" autocomplete="off" />
+        </label>
+        <span id="dayComparison">選択日まで --% / 前日比 --pt</span>
         <span id="monthDayStats">勝ち 0日 / 負け 0日 / 未入力 0日</span>
-        <span id="dayComparison">選択日 前日比 --% / 前日まで ¥0</span>
       </article>
     </section>
 
@@ -182,6 +186,6 @@
   </main>
   <div id="saveToast" class="save-toast" role="status" aria-live="polite" hidden>保存しました</div>
 
-  <script src="app.js?v=40"></script>
+  <script src="app.js?v=41"></script>
 </body>
 </html>

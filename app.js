@@ -2,6 +2,7 @@ const STORAGE_KEY = 'fx-income-calendar-v1';
 const QUOTE_STATE_KEY = 'fx-income-calendar-quote-state-v2';
 const PIVOT_VISIBILITY_KEY = 'fx-income-calendar-pivot-visible-v1';
 const MONTH_NOTES_KEY = 'fx-income-calendar-month-notes-v1';
+const MONTH_CAPITALS_KEY = 'fx-income-calendar-month-capitals-v1';
 const BACKUP_META_KEY = 'fx-income-calendar-backup-meta-v1';
 const MAX_ENTRY_AMOUNT = 999999;
 
@@ -430,6 +431,7 @@ const state = {
   selected: toKey(new Date()),
   records: loadRecords(),
   monthNotes: loadMonthNotes(),
+  monthCapitals: loadMonthCapitals(),
   lastBackupAt: loadLastBackupAt(),
 };
 
@@ -440,6 +442,7 @@ const els = {
   monthBreakdown: document.getElementById('monthBreakdown'),
   monthDayStats: document.getElementById('monthDayStats'),
   dayComparison: document.getElementById('dayComparison'),
+  monthCapitalInput: document.getElementById('monthCapitalInput'),
   monthMemoInput: document.getElementById('monthMemoInput'),
   currentMonthBtn: document.getElementById('currentMonthBtn'),
   yearNet: document.getElementById('yearNet'),
@@ -517,6 +520,18 @@ els.amountInput.addEventListener('input', () => {
   els.amountInput.value = formatInputAmount(els.amountInput.value);
   updateDayPreview();
 });
+els.monthCapitalInput.addEventListener('input', () => {
+  els.monthCapitalInput.value = formatCapitalInput(els.monthCapitalInput.value);
+  const key = toMonthKey(state.shown);
+  const amount = normalizeCapitalAmount(els.monthCapitalInput.value);
+  if (amount > 0) {
+    state.monthCapitals[key] = amount;
+  } else {
+    delete state.monthCapitals[key];
+  }
+  saveMonthCapitals();
+  renderSummary();
+});
 els.monthMemoInput.addEventListener('input', () => {
   const key = toMonthKey(state.shown);
   const note = els.monthMemoInput.value.trim();
@@ -533,10 +548,11 @@ els.pivotToggle.addEventListener('click', togglePivotVisibility);
 
 document.getElementById('exportData').addEventListener('click', () => {
   const payload = {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     records: state.records,
     monthNotes: state.monthNotes,
+    monthCapitals: state.monthCapitals,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -562,8 +578,10 @@ document.getElementById('importData').addEventListener('change', async (event) =
     if (!restored) throw new Error('invalid format');
     state.records = restored.records;
     state.monthNotes = restored.monthNotes;
+    state.monthCapitals = restored.monthCapitals;
     saveRecords();
     saveMonthNotes();
+    saveMonthCapitals();
     render();
     alert('復元しました。');
   } catch (error) {
@@ -745,6 +763,7 @@ function render() {
   renderCalendar();
   renderEntryPanel();
   renderSummary();
+  renderMonthCapital();
   renderMonthNote();
   renderBackupStatus();
 }
@@ -867,15 +886,26 @@ function renderSummary() {
   const monthSummary = summarize(({ y, m }) => y === year && m === month);
   const yearSummary = summarize(({ y }) => y === year);
   const dayStats = getMonthDayStats(year, month);
-  const dayComparison = getSelectedDayComparison();
+  const dayGrowth = getSelectedDayGrowth();
 
   setMoney(els.monthNet, monthSummary.net);
   els.monthBreakdown.textContent = `プラス ${formatMoney(monthSummary.win)} / マイナス ${formatMoney(monthSummary.loss)}`;
   els.monthDayStats.textContent = `勝ち ${dayStats.win}日 / 負け ${dayStats.loss}日 / 未入力 ${dayStats.empty}日`;
-  els.dayComparison.textContent = `選択日 前日比 ${formatPercentChange(dayComparison.percentChange)} / 前日まで ${formatMoney(dayComparison.previousMonthNet)}`;
+  els.dayComparison.textContent = `選択日まで ${formatPercentChange(dayGrowth.growthRate)} / 前日比 ${formatPointChange(dayGrowth.pointChange)}`;
+  els.dayComparison.classList.toggle('positive', dayGrowth.growthRate > 0);
+  els.dayComparison.classList.toggle('negative', dayGrowth.growthRate < 0);
   setMoney(els.yearNet, yearSummary.net);
   els.yearBreakdown.textContent = `プラス ${formatMoney(yearSummary.win)} / マイナス ${formatMoney(yearSummary.loss)}`;
   renderTrends(year);
+}
+
+function renderMonthCapital() {
+  const key = toMonthKey(state.shown);
+  const value = state.monthCapitals[key] || 0;
+  const formatted = value > 0 ? formatCapitalInput(value) : '';
+  if (els.monthCapitalInput.value !== formatted) {
+    els.monthCapitalInput.value = formatted;
+  }
 }
 
 function renderMonthNote() {
@@ -914,27 +944,28 @@ function getMonthDayStats(year, month) {
   return { win, loss, empty: daysInMonth - win - loss };
 }
 
-function getSelectedDayComparison() {
+function getSelectedDayGrowth() {
   const selectedDate = parseKey(state.selected);
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
   const selectedDay = selectedDate.getDate();
+  const monthKey = toMonthKey(selectedDate);
+  const capital = normalizeCapitalAmount(state.monthCapitals[monthKey] || 0);
+  let selectedMonthNet = 0;
   let previousMonthNet = 0;
 
-  for (let day = 1; day < selectedDay; day++) {
+  for (let day = 1; day <= selectedDay; day++) {
     const key = toKey(new Date(year, month, day));
-    previousMonthNet += getRecordNet(state.records[key] || { win: 0, loss: 0 });
+    const net = getRecordNet(state.records[key] || { win: 0, loss: 0 });
+    selectedMonthNet += net;
+    if (day < selectedDay) previousMonthNet += net;
   }
 
-  const selectedNet = getRecordNet(state.records[state.selected] || { win: 0, loss: 0 });
-  const percentChange = previousMonthNet === 0
-    ? null
-    : (selectedNet / Math.abs(previousMonthNet)) * 100;
-
   return {
-    selectedNet,
+    selectedMonthNet,
     previousMonthNet,
-    percentChange,
+    growthRate: capital > 0 ? (selectedMonthNet / capital) * 100 : null,
+    pointChange: capital > 0 ? ((selectedMonthNet - previousMonthNet) / capital) * 100 : null,
   };
 }
 
@@ -1032,9 +1063,22 @@ function formatPercentChange(value) {
   return `${sign}${number.toFixed(1)}%`;
 }
 
+function formatPointChange(value) {
+  if (value === null || value === undefined) return '--pt';
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '--pt';
+  const sign = number > 0 ? '+' : '';
+  return `${sign}${number.toFixed(1)}pt`;
+}
+
 function normalizeAmount(value) {
   const number = Number(String(value).replace(/,/g, ''));
   return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function normalizeCapitalAmount(value) {
+  const number = normalizeAmount(value);
+  return Math.trunc(number);
 }
 
 function normalizeEntryAmount(value) {
@@ -1047,6 +1091,12 @@ function formatInputAmount(value) {
   const digits = String(value).replace(/\D/g, '');
   if (!digits) return '';
   return moneyNumber.format(Math.min(Number(digits), MAX_ENTRY_AMOUNT));
+}
+
+function formatCapitalInput(value) {
+  const digits = String(value).replace(/\D/g, '');
+  if (!digits) return '';
+  return moneyNumber.format(Number(digits));
 }
 
 function toKey(date) {
@@ -1110,6 +1160,20 @@ function saveMonthNotes() {
   localStorage.setItem(MONTH_NOTES_KEY, JSON.stringify(state.monthNotes));
 }
 
+function loadMonthCapitals() {
+  try {
+    const raw = localStorage.getItem(MONTH_CAPITALS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return isValidMonthCapitals(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveMonthCapitals() {
+  localStorage.setItem(MONTH_CAPITALS_KEY, JSON.stringify(state.monthCapitals));
+}
+
 function loadLastBackupAt() {
   try {
     const raw = localStorage.getItem(BACKUP_META_KEY);
@@ -1125,12 +1189,13 @@ function saveLastBackupAt() {
 }
 
 function normalizeBackupData(value) {
-  if (isValidRecords(value)) return { records: value, monthNotes: {} };
+  if (isValidRecords(value)) return { records: value, monthNotes: {}, monthCapitals: {} };
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const records = value.records;
   const monthNotes = value.monthNotes || {};
-  if (!isValidRecords(records) || !isValidMonthNotes(monthNotes)) return null;
-  return { records, monthNotes };
+  const monthCapitals = value.monthCapitals || {};
+  if (!isValidRecords(records) || !isValidMonthNotes(monthNotes) || !isValidMonthCapitals(monthCapitals)) return null;
+  return { records, monthNotes, monthCapitals };
 }
 
 function isValidRecords(value) {
@@ -1147,6 +1212,15 @@ function isValidMonthNotes(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   return Object.entries(value).every(([key, note]) => {
     return /^\d{4}-\d{2}$/.test(key) && typeof note === 'string' && note.length <= 240;
+  });
+}
+
+function isValidMonthCapitals(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.entries(value).every(([key, amount]) => {
+    return /^\d{4}-\d{2}$/.test(key)
+      && Number.isFinite(Number(amount))
+      && Number(amount) > 0;
   });
 }
 
