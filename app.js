@@ -439,7 +439,7 @@ const els = {
   monthNet: document.getElementById('monthNet'),
   monthBreakdown: document.getElementById('monthBreakdown'),
   monthDayStats: document.getElementById('monthDayStats'),
-  monthStreakStats: document.getElementById('monthStreakStats'),
+  dayComparison: document.getElementById('dayComparison'),
   monthMemoInput: document.getElementById('monthMemoInput'),
   currentMonthBtn: document.getElementById('currentMonthBtn'),
   yearNet: document.getElementById('yearNet'),
@@ -867,12 +867,12 @@ function renderSummary() {
   const monthSummary = summarize(({ y, m }) => y === year && m === month);
   const yearSummary = summarize(({ y }) => y === year);
   const dayStats = getMonthDayStats(year, month);
-  const streakStats = getMonthStreakStats(year, month);
+  const dayComparison = getSelectedDayComparison();
 
   setMoney(els.monthNet, monthSummary.net);
   els.monthBreakdown.textContent = `プラス ${formatMoney(monthSummary.win)} / マイナス ${formatMoney(monthSummary.loss)}`;
   els.monthDayStats.textContent = `勝ち ${dayStats.win}日 / 負け ${dayStats.loss}日 / 未入力 ${dayStats.empty}日`;
-  els.monthStreakStats.textContent = `現在 ${streakStats.currentLabel} / 最大連勝 ${streakStats.maxWin}日 / 最大連敗 ${streakStats.maxLoss}日`;
+  els.dayComparison.textContent = `選択日 前日比 ${formatSignedMoney(dayComparison.diff)} / 前日 ${formatMoney(dayComparison.previousNet)}`;
   setMoney(els.yearNet, yearSummary.net);
   els.yearBreakdown.textContent = `プラス ${formatMoney(yearSummary.win)} / マイナス ${formatMoney(yearSummary.loss)}`;
   renderTrends(year);
@@ -914,38 +914,16 @@ function getMonthDayStats(year, month) {
   return { win, loss, empty: daysInMonth - win - loss };
 }
 
-function getMonthStreakStats(year, month) {
-  const daysInMonth = new Date(year, month, 0).getDate();
-  let maxWin = 0;
-  let maxLoss = 0;
-  let currentWin = 0;
-  let currentLoss = 0;
-  let latestTone = 'none';
-  let latestStreak = 0;
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const net = getRecordNet(state.records[toKey(new Date(year, month - 1, day))] || { win: 0, loss: 0 });
-    if (net > 0) {
-      currentWin++;
-      currentLoss = 0;
-      maxWin = Math.max(maxWin, currentWin);
-      latestTone = 'win';
-      latestStreak = currentWin;
-    } else if (net < 0) {
-      currentLoss++;
-      currentWin = 0;
-      maxLoss = Math.max(maxLoss, currentLoss);
-      latestTone = 'loss';
-      latestStreak = currentLoss;
-    }
-  }
-
-  const currentLabel = latestTone === 'win'
-    ? `${latestStreak}連勝`
-    : latestTone === 'loss'
-      ? `${latestStreak}連敗`
-      : '0日';
-  return { currentLabel, maxWin, maxLoss };
+function getSelectedDayComparison() {
+  const selectedDate = parseKey(state.selected);
+  const previousDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() - 1);
+  const selectedNet = getRecordNet(state.records[state.selected] || { win: 0, loss: 0 });
+  const previousNet = getRecordNet(state.records[toKey(previousDate)] || { win: 0, loss: 0 });
+  return {
+    selectedNet,
+    previousNet,
+    diff: selectedNet - previousNet,
+  };
 }
 
 function updateDayPreview() {
@@ -1031,6 +1009,13 @@ function formatMoney(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return '¥0';
   const sign = number < 0 ? '-' : '';
+  return `${sign}¥${moneyNumber.format(Math.abs(number))}`;
+}
+
+function formatSignedMoney(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number === 0) return '¥0';
+  const sign = number > 0 ? '+' : '-';
   return `${sign}¥${moneyNumber.format(Math.abs(number))}`;
 }
 
