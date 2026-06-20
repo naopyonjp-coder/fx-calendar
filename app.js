@@ -1066,7 +1066,7 @@ function renderCapitalStats(container, stats) {
   const items = [
     { label: '投資', value: formatMoney(stats.investment), tone: '' },
     { label: '回収', value: formatMoney(stats.recovered), tone: '' },
-    { label: '実質', value: formatFundingBase(stats.effectiveCapital), tone: '' },
+    { label: '実質投入', value: formatFundingBase(stats.effectiveCapital), tone: '' },
     { label: '増加率', value: formatPercentChange(stats.growthRate), tone: getToneClass(stats.growthRate) },
   ];
 
