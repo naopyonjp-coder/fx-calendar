@@ -444,12 +444,13 @@ const els = {
   monthBreakdown: document.getElementById('monthBreakdown'),
   monthDayStats: document.getElementById('monthDayStats'),
   dayComparison: document.getElementById('dayComparison'),
-  fundingSummary: document.getElementById('fundingSummary'),
+  monthFundingStats: document.getElementById('monthFundingStats'),
   monthCapitalInput: document.getElementById('monthCapitalInput'),
   monthMemoInput: document.getElementById('monthMemoInput'),
   currentMonthBtn: document.getElementById('currentMonthBtn'),
   yearNet: document.getElementById('yearNet'),
   yearBreakdown: document.getElementById('yearBreakdown'),
+  yearFundingStats: document.getElementById('yearFundingStats'),
   monthlyTrend: document.getElementById('monthlyTrend'),
   yearlyTrend: document.getElementById('yearlyTrend'),
   selectedDateTitle: document.getElementById('selectedDateTitle'),
@@ -912,6 +913,8 @@ function renderSummary() {
   const month = state.shown.getMonth() + 1;
   const monthSummary = summarize(({ y, m }) => y === year && m === month);
   const yearSummary = summarize(({ y }) => y === year);
+  const monthFunding = getFundingStats({ year, month });
+  const yearFunding = getFundingStats({ year });
   const dayStats = getMonthDayStats(year, month);
   const dayGrowth = getSelectedDayGrowth();
 
@@ -921,9 +924,10 @@ function renderSummary() {
   els.dayComparison.textContent = `選択日まで ${formatPercentChange(dayGrowth.growthRate)} / 前日比 ${formatPointChange(dayGrowth.pointChange)}`;
   els.dayComparison.classList.toggle('positive', dayGrowth.growthRate > 0);
   els.dayComparison.classList.toggle('negative', dayGrowth.growthRate < 0);
-  els.fundingSummary.textContent = `投入資金 ${formatFundingBase(dayGrowth.investedCapital)} / 入金 ${formatMoney(dayGrowth.deposits)} / 出金 ${formatMoney(dayGrowth.withdrawals)}`;
+  renderCapitalStats(els.monthFundingStats, monthFunding);
   setMoney(els.yearNet, yearSummary.net);
   els.yearBreakdown.textContent = `プラス ${formatMoney(yearSummary.win)} / マイナス ${formatMoney(yearSummary.loss)}`;
+  renderCapitalStats(els.yearFundingStats, yearFunding);
   renderTrends(year);
 }
 
@@ -970,6 +974,37 @@ function getMonthDayStats(year, month) {
     if (net < 0) loss++;
   }
   return { win, loss, empty: daysInMonth - win - loss };
+}
+
+function getFundingStats({ year, month = null }) {
+  const summary = summarize(({ y, m }) => y === year && (month === null || m === month));
+  let startingCapital = 0;
+  let deposits = 0;
+  let withdrawals = 0;
+
+  Object.entries(state.monthCapitals).forEach(([key, amount]) => {
+    const [capitalYear, capitalMonth] = key.split('-').map(Number);
+    if (capitalYear !== year || (month !== null && capitalMonth !== month)) return;
+    startingCapital += normalizeCapitalAmount(amount);
+  });
+
+  Object.entries(state.capitalFlows).forEach(([key, flow]) => {
+    const [flowYear, flowMonth] = key.split('-').map(Number);
+    if (flowYear !== year || (month !== null && flowMonth !== month)) return;
+    const totals = getCapitalFlowTotals(flow);
+    deposits += totals.deposit;
+    withdrawals += totals.withdrawal;
+  });
+
+  const investment = startingCapital + deposits;
+  const recovered = withdrawals;
+  const effectiveCapital = investment - recovered;
+  return {
+    investment,
+    recovered,
+    effectiveCapital,
+    growthRate: effectiveCapital > 0 ? (summary.net / effectiveCapital) * 100 : null,
+  };
 }
 
 function getSelectedDayGrowth() {
@@ -1027,27 +1062,52 @@ function renderTrends(year) {
   renderBarChart(els.yearlyTrend, getYearlyTrend(), 'まだ年別データがありません');
 }
 
+function renderCapitalStats(container, stats) {
+  const items = [
+    { label: '投資', value: formatMoney(stats.investment), tone: '' },
+    { label: '回収', value: formatMoney(stats.recovered), tone: '' },
+    { label: '実質', value: formatFundingBase(stats.effectiveCapital), tone: '' },
+    { label: '増加率', value: formatPercentChange(stats.growthRate), tone: getToneClass(stats.growthRate) },
+  ];
+
+  container.innerHTML = '';
+  items.forEach(item => {
+    const box = document.createElement('span');
+    box.className = `capital-stat ${item.tone}`.trim();
+    const label = document.createElement('small');
+    label.textContent = item.label;
+    const value = document.createElement('strong');
+    value.textContent = item.value;
+    box.append(label, value);
+    container.appendChild(box);
+  });
+}
+
 function getMonthlyTrend(year) {
   return Array.from({ length: 12 }, (_, index) => {
     const month = index + 1;
     const summary = summarize(({ y, m }) => y === year && m === month);
+    const funding = getFundingStats({ year, month });
     return {
       label: `${month}月`,
       value: summary.net,
-      detail: `プラス ${formatMoney(summary.win)} / マイナス ${formatMoney(summary.loss)}`,
+      detail: `増加率 ${formatPercentChange(funding.growthRate)} / 投資 ${formatMoney(funding.investment)} / 回収 ${formatMoney(funding.recovered)}`,
     };
   });
 }
 
 function getYearlyTrend() {
   const years = new Set(Object.keys(state.records).map(key => Number(key.slice(0, 4))).filter(Number.isFinite));
+  Object.keys(state.monthCapitals).forEach(key => years.add(Number(key.slice(0, 4))));
+  Object.keys(state.capitalFlows).forEach(key => years.add(Number(key.slice(0, 4))));
   years.add(state.shown.getFullYear());
   return Array.from(years).sort((a, b) => a - b).map(year => {
     const summary = summarize(({ y }) => y === year);
+    const funding = getFundingStats({ year });
     return {
       label: `${year}年`,
       value: summary.net,
-      detail: `プラス ${formatMoney(summary.win)} / マイナス ${formatMoney(summary.loss)}`,
+      detail: `増加率 ${formatPercentChange(funding.growthRate)} / 投資 ${formatMoney(funding.investment)} / 回収 ${formatMoney(funding.recovered)}`,
     };
   });
 }
@@ -1100,6 +1160,12 @@ function setMoney(element, value) {
   element.textContent = formatMoney(value);
   element.classList.toggle('positive', value > 0);
   element.classList.toggle('negative', value < 0);
+}
+
+function getToneClass(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number === 0) return '';
+  return number > 0 ? 'positive' : 'negative';
 }
 
 function formatMoney(value) {
