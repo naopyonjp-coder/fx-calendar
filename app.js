@@ -4,6 +4,7 @@ const PIVOT_VISIBILITY_KEY = 'fx-income-calendar-pivot-visible-v1';
 const MONTH_NOTES_KEY = 'fx-income-calendar-month-notes-v1';
 const MONTH_CAPITALS_KEY = 'fx-income-calendar-month-capitals-v1';
 const CAPITAL_FLOWS_KEY = 'fx-income-calendar-capital-flows-v1';
+const CAPITAL_VISIBILITY_KEY = 'fx-income-calendar-capital-visible-v1';
 const BACKUP_META_KEY = 'fx-income-calendar-backup-meta-v1';
 const MAX_ENTRY_AMOUNT = 999999;
 
@@ -434,6 +435,7 @@ const state = {
   monthNotes: loadMonthNotes(),
   monthCapitals: loadMonthCapitals(),
   capitalFlows: loadCapitalFlows(),
+  capitalVisible: loadCapitalVisibility(),
   lastBackupAt: loadLastBackupAt(),
 };
 
@@ -443,6 +445,7 @@ const els = {
   monthNet: document.getElementById('monthNet'),
   monthBreakdown: document.getElementById('monthBreakdown'),
   monthDayStats: document.getElementById('monthDayStats'),
+  capitalToggle: document.getElementById('capitalToggle'),
   dayComparison: document.getElementById('dayComparison'),
   monthFundingStats: document.getElementById('monthFundingStats'),
   monthCapitalInput: document.getElementById('monthCapitalInput'),
@@ -490,6 +493,12 @@ document.getElementById('todayBtn').addEventListener('click', () => {
 
 els.currentMonthBtn.addEventListener('click', () => {
   goToToday();
+});
+
+els.capitalToggle.addEventListener('click', () => {
+  state.capitalVisible = !state.capitalVisible;
+  saveCapitalVisibility();
+  renderCapitalVisibility();
 });
 
 function goToToday() {
@@ -789,6 +798,7 @@ function render() {
   renderEntryPanel();
   renderSummary();
   renderMonthCapital();
+  renderCapitalVisibility();
   renderMonthNote();
   renderBackupStatus();
 }
@@ -938,6 +948,14 @@ function renderMonthCapital() {
   if (els.monthCapitalInput.value !== formatted) {
     els.monthCapitalInput.value = formatted;
   }
+}
+
+function renderCapitalVisibility() {
+  document.querySelectorAll('[data-capital-section]').forEach(section => {
+    section.hidden = !state.capitalVisible;
+  });
+  els.capitalToggle.textContent = state.capitalVisible ? '資金情報 非表示' : '資金情報 表示';
+  els.capitalToggle.setAttribute('aria-pressed', String(state.capitalVisible));
 }
 
 function renderMonthNote() {
@@ -1312,6 +1330,14 @@ function loadCapitalFlows() {
 
 function saveCapitalFlows() {
   localStorage.setItem(CAPITAL_FLOWS_KEY, JSON.stringify(state.capitalFlows));
+}
+
+function loadCapitalVisibility() {
+  return localStorage.getItem(CAPITAL_VISIBILITY_KEY) !== 'hidden';
+}
+
+function saveCapitalVisibility() {
+  localStorage.setItem(CAPITAL_VISIBILITY_KEY, state.capitalVisible ? 'visible' : 'hidden');
 }
 
 function loadLastBackupAt() {

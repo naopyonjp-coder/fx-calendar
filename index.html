@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#ffffff" />
-  <meta name="description" content="日別のFX収支をカレンダーで記録できる無料PWAアプリです。月別合計、月メモ、バックアップにも対応しています。" />
+  <meta name="description" content="日別のFX収支をカレンダーで記録できる無料PWAアプリです。月別収支、月メモ、バックアップにも対応しています。" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="FX収支" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="FX収支カレンダー" />
   <meta property="og:title" content="FX収支カレンダー" />
-  <meta property="og:description" content="日別のFX収支をカレンダーで記録できる無料PWAアプリです。月別合計、月メモ、バックアップにも対応。" />
+  <meta property="og:description" content="日別のFX収支をカレンダーで記録できる無料PWAアプリです。月別収支、月メモ、バックアップにも対応。" />
   <meta property="og:url" content="https://naopyonjp-coder.github.io/fx-calendar/" />
   <meta property="og:image" content="https://naopyonjp-coder.github.io/fx-calendar/og-image.jpg" />
   <meta property="og:image:type" content="image/jpeg" />
@@ -26,7 +26,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
-  <link rel="stylesheet" href="styles.css?v=44" />
+  <link rel="stylesheet" href="styles.css?v=45" />
 </head>
 <body>
   <main class="app-shell">
@@ -84,15 +84,18 @@
 
     <section class="summary-grid" aria-label="収支サマリー">
       <article class="summary-card primary">
-        <p>月別合計</p>
+        <div class="summary-card-head">
+          <p>月別収支</p>
+          <button id="capitalToggle" class="summary-toggle" type="button" aria-pressed="true">資金情報 非表示</button>
+        </div>
         <strong id="monthNet">¥0</strong>
         <span id="monthBreakdown">プラス ¥0 / マイナス ¥0</span>
-        <label class="month-capital-field" for="monthCapitalInput">
+        <label class="month-capital-field" for="monthCapitalInput" data-capital-section>
           <span>月初資金</span>
           <input id="monthCapitalInput" type="text" inputmode="numeric" maxlength="13" placeholder="例：1,000,000" autocomplete="off" />
         </label>
-        <span id="dayComparison">選択日まで --% / 前日比 --pt</span>
-        <div id="monthFundingStats" class="capital-summary" aria-label="月間資金集計"></div>
+        <span id="dayComparison" data-capital-section>選択日まで --% / 前日比 --pt</span>
+        <div id="monthFundingStats" class="capital-summary" aria-label="月間資金集計" data-capital-section></div>
         <span id="monthDayStats">勝ち 0日 / 負け 0日 / 未入力 0日</span>
       </article>
     </section>
@@ -137,7 +140,7 @@
           <span>金額</span>
           <input id="amountInput" type="text" inputmode="numeric" maxlength="7" placeholder="例：125,000" autocomplete="off" />
         </label>
-        <div class="funding-inputs" aria-label="資金調整">
+        <div class="funding-inputs" aria-label="資金調整" data-capital-section>
           <p>資金調整</p>
           <label>
             <span>入金</span>
@@ -168,7 +171,7 @@
           <p>年別合計</p>
           <strong id="yearNet">¥0</strong>
           <span id="yearBreakdown">プラス ¥0 / マイナス ¥0</span>
-          <div id="yearFundingStats" class="capital-summary compact" aria-label="年間資金集計"></div>
+          <div id="yearFundingStats" class="capital-summary compact" aria-label="年間資金集計" data-capital-section></div>
         </article>
         <section class="trend-panel" aria-label="収支推移">
           <div class="trend-section">
@@ -199,6 +202,6 @@
   </main>
   <div id="saveToast" class="save-toast" role="status" aria-live="polite" hidden>保存しました</div>
 
-  <script src="app.js?v=44"></script>
+  <script src="app.js?v=45"></script>
 </body>
 </html>
