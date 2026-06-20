@@ -441,6 +441,7 @@ h3 { margin-bottom: 0; font-size: 20px; }
 .day-amount { align-self: start; justify-self: center; max-width: 100%; min-height: 18px; overflow: hidden; font-weight: 900; font-size: 12px; line-height: 1.25; white-space: nowrap; }
 .day-amount.profit-text, .positive { color: var(--profit); }
 .day-amount.loss-text, .negative { color: var(--loss); }
+.day-amount.day-amount-long { font-size: 11px; }
 .day-events {
   display: grid;
   gap: 3px;
@@ -851,6 +852,10 @@ summary { cursor: pointer; font-weight: 900; }
     transform: scaleX(.92);
     transform-origin: center;
   }
+  .day-amount.day-amount-long {
+    font-size: 8px;
+    transform: scaleX(.82);
+  }
   .day-events {
     min-height: 18px;
     gap: 0;
@@ -897,6 +902,10 @@ summary { cursor: pointer; font-weight: 900; }
   .day-amount {
     font-size: 8.5px;
     transform: scaleX(.9);
+  }
+  .day-amount.day-amount-long {
+    font-size: 7.5px;
+    transform: scaleX(.78);
   }
   .pivot-levels strong {
     font-size: 13px;

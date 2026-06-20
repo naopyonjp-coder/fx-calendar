@@ -6,7 +6,7 @@ const MONTH_CAPITALS_KEY = 'fx-income-calendar-month-capitals-v1';
 const CAPITAL_FLOWS_KEY = 'fx-income-calendar-capital-flows-v1';
 const CAPITAL_VISIBILITY_KEY = 'fx-income-calendar-capital-visible-v1';
 const BACKUP_META_KEY = 'fx-income-calendar-backup-meta-v1';
-const MAX_ENTRY_AMOUNT = 999999;
+const MAX_ENTRY_AMOUNT = 9999999;
 
 const TRADING_QUOTES = [
   {
@@ -841,6 +841,7 @@ function renderCalendar() {
     amount.className = 'day-amount';
     if (net > 0) amount.classList.add('profit-text');
     if (net < 0) amount.classList.add('loss-text');
+    if (Math.abs(net) >= 1000000) amount.classList.add('day-amount-long');
     amount.textContent = net === 0 ? '' : shortYen(net);
     const eventList = document.createElement('span');
     eventList.className = 'day-events';

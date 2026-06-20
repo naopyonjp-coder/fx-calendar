@@ -1,9 +1,9 @@
-const CACHE_NAME = 'fx-income-calendar-v46';
+const CACHE_NAME = 'fx-income-calendar-v47';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=46',
-  './app.js?v=46',
+  './styles.css?v=47',
+  './app.js?v=47',
   './economic-events.json',
   './manifest.json',
   './icons/icon-192.png',
